@@ -2,6 +2,8 @@
 
 Efficient targetted menu built for fast buffer navigation
 
+![demo](https://imgur.com/a/Mh5AccG)
+
 ## Description
 
 `Snipe.nvim` is selection menu that can accept any list of items
