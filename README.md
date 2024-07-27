@@ -2,7 +2,7 @@
 
 Efficient targetted menu built for fast buffer navigation
 
-![demo](https://imgur.com/a/Mh5AccG)
+[demo](https://imgur.com/a/Mh5AccG)
 
 ## Description
 
