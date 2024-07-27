@@ -2,7 +2,11 @@
 
 Efficient targetted menu built for fast buffer navigation
 
-https://github.com/user-attachments/assets/3cc3f4ee-5743-45a1-a44f-b29f43ba2088
+
+
+![recording](https://github.com/user-attachments/assets/a0804e7f-5a04-4e5c-9274-e5eab7a36dc7)
+
+
 
 ## Description
 
