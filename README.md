@@ -32,7 +32,7 @@ For `lazy.nvim`:
 ```lua
 {
   "leath-dub/snipe.nvim",
-  setup = function()
+  config = function()
     local snipe = require("snipe")
     snipe.setup()
     vim.keymap.set("n", "gb", snipe.toggle_buffer_menu())
