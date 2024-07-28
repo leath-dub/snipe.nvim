@@ -176,7 +176,7 @@ end
 ---@generic T
 ---@param producer fun(): table<T>, table<string> (function) Function
 ---@param callback fun(meta: T, index: integer) (function) Function
-Snipe.toggle_menu = function(producer, callback)
+Snipe.create_menu_toggler = function(producer, callback)
   local menu = Snipe.menu(producer, callback)
   return function()
     if menu.is_open() then
@@ -187,11 +187,17 @@ Snipe.toggle_menu = function(producer, callback)
   end
 end
 
-Snipe.toggle_buffer_menu = function()
-  return Snipe.toggle_menu(Snipe.buffer_producer, function(bufnr, _)
+---@deprecated Use `create_toggle_menu` instead
+Snipe.toggle_menu = Snipe.create_menu_toggler
+
+Snipe.create_buffer_menu_toggler = function()
+  return Snipe.create_menu_toggler(Snipe.buffer_producer, function(bufnr, _)
     vim.api.nvim_set_current_buf(bufnr)
   end)
 end
+
+---@deprecated Use `create_toggle_buffer_menu` instead
+Snipe.toggle_buffer_menu = Snipe.create_buffer_menu_toggler
 
 --- Buffer producer lists open buffers
 ---

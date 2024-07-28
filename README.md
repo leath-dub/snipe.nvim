@@ -35,7 +35,7 @@ For `lazy.nvim`:
   config = function()
     local snipe = require("snipe")
     snipe.setup()
-    vim.keymap.set("n", "gb", snipe.toggle_buffer_menu())
+    vim.keymap.set("n", "gb", snipe.create_buffer_menu_toggler())
   end
 }
 ```
@@ -46,14 +46,14 @@ For `packadd` (builtin package manager), clone the repo into `$HOME/.config/nvim
 vim.cmd.packadd "snipe.nvim"
 local snipe = require("snipe")
 snipe.setup()
-vim.keymap.set("n", "gb", snipe.toggle_buffer_menu())
+vim.keymap.set("n", "gb", snipe.create_buffer_menu_toggler())
 ```
 
 ---
 
 ### NOTE
 
-`snipe.toggle_buffer_menu()` is not a typo, calling this function returns the function that when called will toggle the menu. So if you
+`snipe.create_buffer_menu_toggler()` is not a typo, calling this function returns the function that when called will toggle the menu. So if you
 want to use the lazy `keys` field you need to do the following:
 
 ```lua
@@ -61,7 +61,10 @@ want to use the lazy `keys` field you need to do the following:
   "leath-dub/snipe.nvim",
   opts = {},
   keys = {
-    { "gb", function() require("snipe").toggle_buffer_menu()() end },
+    { "gb", function()
+      local toggle = require("snipe").create_buffer_menu_toggler()
+      toggle()
+    end },
   }
 }
 ```
@@ -103,7 +106,7 @@ is the list of buffer-id's). The second table is the list of actual strings you 
 Below is an example of a file producer:
 
 ```lua
-local function file_menu()
+local function file_menu_toggler()
   local function file_producer()
     local uv = (vim.loop or vim.uv)
     local items = {}
@@ -119,10 +122,10 @@ local function file_menu()
     return items, items_display
   end
 
-  return snipe.toggle_menu(file_producer, function (meta, _) vim.cmd.edit(meta[2]) end)
+  return snipe.create_menu_toggler(file_producer, function (meta, _) vim.cmd.edit(meta[2]) end)
 end
 
-vim.keymap.set("n", "<leader>f", file_menu())
+vim.keymap.set("n", "<leader>f", file_menu_toggler())
 ```
 
 This lets you navigate files in the current directory with `<leader>f`
