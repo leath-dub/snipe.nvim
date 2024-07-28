@@ -40,6 +40,17 @@ For `lazy.nvim`:
 }
 ```
 
+For `packadd` (builtin package manager), clone the repo into `$HOME/.config/nvim/pack/snipe/opt/snipe.nvim` and add this to your configuration:
+
+```lua
+vim.cmd.packadd "snipe.nvim"
+local snipe = require("snipe")
+snipe.setup()
+vim.keymap.set("n", "gb", snipe.toggle_buffer_menu())
+```
+
+---
+
 ### NOTE
 
 `snipe.toggle_buffer_menu()` is not a typo, calling this function returns the function that when called will toggle the menu. So if you
@@ -53,15 +64,6 @@ want to use the lazy `keys` field you need to do the following:
     { "gb", function() require("snipe").toggle_buffer_menu()() end },
   }
 }
-```
-
-For `packadd` (builtin package manager), clone the repo into `$HOME/.config/nvim/pack/snipe/opt/snipe.nvim` and add this to your configuration:
-
-```lua
-vim.cmd.packadd "snipe.nvim"
-local snipe = require("snipe")
-snipe.setup()
-vim.keymap.set("n", "gb", snipe.toggle_buffer_menu())
 ```
 
 ## Options
