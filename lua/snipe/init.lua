@@ -28,7 +28,11 @@ Snipe.config = {
     -- You can also just use normal navigation to go to the item you want
     -- this option just sets the keybind for selecting the item under the
     -- cursor
-    under_cursor = "<cr>"
+    under_cursor = "<cr>",
+
+    -- In case you changed your mind, provide a keybind that lets you
+    -- cancel the snipe and close the window.
+    cancel_snipe = "<esc>",
   },
 }
 
@@ -156,6 +160,10 @@ Snipe.menu = function(producer, callback)
       state.page_index = math.max(state.page_index - 1, 1)
       close() -- close so keymaps get freed
       open()
+    end, { nowait = true, buffer = state.buffer })
+
+    vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function()
+      close()
     end, { nowait = true, buffer = state.buffer })
   end
 
