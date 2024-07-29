@@ -63,7 +63,7 @@ Snipe.config = {
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
-    dictionary = "sadfjklewcmpgh",
+    dictionary = "sadflewcmpghio",
   },
   navigate = {
     -- When the list is too long it is split into pages
