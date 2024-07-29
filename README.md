@@ -80,6 +80,16 @@ Snipe.config = {
 }
 ```
 
+You can also pass options to `create_buffer_menu_toggler`:
+
+```lua
+{
+  -- Limit the width of path buffer names
+  -- /my/long/path/is/really/annoying will be is/really/annoying (max of 3)
+  max_path_width = 3
+}
+```
+
 ## Producers
 
 A producer is just a function that returns two lists (tables), the first is a `user/meta-data` table, this is will
