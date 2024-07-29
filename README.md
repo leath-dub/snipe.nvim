@@ -84,6 +84,16 @@ Snipe.config = {
 }
 ```
 
+You can also pass options to `create_buffer_menu_toggler`:
+
+```lua
+{
+  -- Limit the width of path buffer names
+  -- /my/long/path/is/really/annoying will be is/really/annoying (max of 3)
+  max_path_width = 3
+}
+```
+
 ## Events
 
 The following `User` events can be hooked into:
@@ -110,16 +120,6 @@ vim.api.nvim_create_autocmd("User", {
     -- Do something with args
   end,
 })
-```
-
-You can also pass options to `create_buffer_menu_toggler`:
-
-```lua
-{
-  -- Limit the width of path buffer names
-  -- /my/long/path/is/really/annoying will be is/really/annoying (max of 3)
-  max_path_width = 3
-}
 ```
 
 ## Producers
