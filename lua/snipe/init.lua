@@ -10,6 +10,9 @@ end
 Snipe.config = {
   ui = {
     max_width = -1, -- -1 means dynamic width
+    -- Where to place the ui window
+    -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
+    position = "topleft",
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
@@ -231,6 +234,7 @@ H.setup_config = function(config)
 
   vim.validate({
     ["ui.max_width"] = { config.ui.max_width, "number", true },
+    ["ui.position"] = { config.ui.position, "string", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
@@ -329,14 +333,51 @@ H.create_buffer = function()
 end
 
 H.create_window = function(bufnr, height, width)
+  local row, col = 0, 0
+  local anchor = "NW"
+  local pos = Snipe.config.ui.position
+
+  local max_height = H.window_get_max_height()
+  local max_width = vim.fn.winwidth(0)
+
+  if pos == "topleft" then
+    row, col = 0, 0
+    anchor = "NW"
+  elseif pos == "topright" then
+    row, col = 0, max_width
+    anchor = "NE"
+  elseif pos == "bottomleft" then
+    row, col = max_height + 2, 0
+    anchor = "SW"
+  elseif pos == "bottomright" then
+    row, col = max_height + 2, max_width
+    anchor = "SE"
+  elseif pos == "center" then
+    row, col = math.floor((max_height + 2) / 2) - math.floor((height + 2) / 2),
+               math.floor(max_width / 2) - math.floor((width + 2) / 2)
+  elseif pos == "cursor" then
+    -- Taken from telescope source
+    local winbar = (function()
+      if vim.fn.exists "&winbar" == 1 then
+        return vim.wo.winbar == "" and 0 or 1
+      end
+      return 0
+    end)()
+    local position = vim.api.nvim_win_get_position(0)
+    row, col = vim.fn.winline() + position[1] + winbar, vim.fn.wincol() + position[2]
+    anchor = "NW"
+  else
+    vim.notify("(snipe) unrecognized position", vim.log.levels.WARN)
+  end
+
   local winnr = vim.api.nvim_open_win(bufnr, false, {
     title = "Snipe",
-    anchor = "NW",
+    anchor = anchor,
     border = "single",
     style = "minimal",
     relative = "editor",
-    row = 0,
-    col = 0,
+    row = row,
+    col = col,
     width = width,
     height = height,
     zindex = 99,

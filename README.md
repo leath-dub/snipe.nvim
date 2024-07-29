@@ -49,26 +49,6 @@ snipe.setup()
 vim.keymap.set("n", "gb", snipe.create_buffer_menu_toggler())
 ```
 
----
-
-### NOTE
-
-`snipe.create_buffer_menu_toggler()` is not a typo, calling this function returns the function that when called will toggle the menu. So if you
-want to use the lazy `keys` field you need to do the following:
-
-```lua
-{
-  "leath-dub/snipe.nvim",
-  opts = {},
-  keys = {
-    { "gb", function()
-      local toggle = require("snipe").create_buffer_menu_toggler()
-      toggle()
-    end },
-  }
-}
-```
-
 ## Options
 
 You can pass in a table of options to the `setup` function, here are the default options:
@@ -77,6 +57,9 @@ You can pass in a table of options to the `setup` function, here are the default
 Snipe.config = {
   ui = {
     max_width = -1, -- -1 means dynamic width
+    -- Where to place the ui window
+    -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
+    position = "topleft",
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
