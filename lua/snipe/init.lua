@@ -193,8 +193,9 @@ end
 ---@deprecated Use `create_toggle_menu` instead
 Snipe.toggle_menu = Snipe.create_menu_toggler
 
-Snipe.create_buffer_menu_toggler = function()
-  return Snipe.create_menu_toggler(Snipe.buffer_producer, function(bufnr, _)
+Snipe.create_buffer_menu_toggler = function(bopts_)
+  local bopts = bopts_ or {}
+  return Snipe.create_menu_toggler(function() return Snipe.buffer_producer(bopts) end, function(bufnr, _)
     vim.api.nvim_set_current_buf(bufnr)
   end)
 end
@@ -205,17 +206,39 @@ Snipe.toggle_buffer_menu = Snipe.create_buffer_menu_toggler
 --- Buffer producer lists open buffers
 ---
 ---@return table<integer>, table<string>
-Snipe.buffer_producer = function()
+Snipe.buffer_producer = function(opts_)
+  local opts = opts_ or {}
+
   local bufnrs = vim.tbl_filter(function (b)
     return vim.fn.buflisted(b) == 1
   end, vim.api.nvim_list_bufs())
 
   local bufnames = vim.tbl_map(function (b)
+
     local name = vim.fn.bufname(b)
     if #name == 0 then
       return "[No Name]"
     end
-    return name
+
+    local res = name:gsub(vim.env.HOME, "~", 1)
+
+    if opts.max_path_width ~= nil then
+      local rem = name
+      res = ""
+      for _ = 1, opts.max_path_width do
+        if res ~= "" then
+          res = "/" .. res
+        end
+        if rem == vim.env.HOME then
+          res = "~" .. res
+        else
+          res = vim.fs.basename(rem) .. res
+        end
+        rem = vim.fs.dirname(rem)
+      end
+    end
+
+    return res
   end, bufnrs)
 
   return bufnrs, bufnames
