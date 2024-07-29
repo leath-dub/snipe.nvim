@@ -226,6 +226,9 @@ Snipe.buffer_producer = function(opts_)
       local rem = name
       res = ""
       for _ = 1, opts.max_path_width do
+        if vim.fs.dirname(rem) == rem then
+          break
+        end
         if res ~= "" then
           res = "/" .. res
         end
