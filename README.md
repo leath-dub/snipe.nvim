@@ -84,6 +84,34 @@ Snipe.config = {
 }
 ```
 
+## Events
+
+The following `User` events can be hooked into:
+
+* `SnipeCreateBuffer` - event is triggered after tag and default mappings are set. The following code allows you to hook into this:
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "SnipeCreateBuffer",
+  callback = function (args)
+    -- | Format of `args`:
+    --
+    -- args = {
+    --   data = {
+    --     menu = {
+    --       close = <function>,
+    --       open = <function>,
+    --       is_open = <function>,
+    --     }
+    --     buf = <menu bufnr>,
+    --   }
+    -- }
+
+    -- Do something with args
+  end,
+})
+```
+
 You can also pass options to `create_buffer_menu_toggler`:
 
 ```lua

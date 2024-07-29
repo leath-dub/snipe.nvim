@@ -56,6 +56,10 @@ Snipe.menu = function(producer, callback)
     page_index = 1,
   }
 
+  local function is_open()
+    return vim.api.nvim_win_is_valid(state.window) or not window_unset
+  end
+
   local function close()
     vim.api.nvim_buf_delete(state.buffer, { force = true })
     state.window = window_unset
@@ -131,6 +135,18 @@ Snipe.menu = function(producer, callback)
     vim.wo[state.window].wrap = false
     vim.wo[state.window].cursorline = true
 
+    vim.api.nvim_exec_autocmds("User", {
+      pattern = "SnipeCreateBuffer",
+      data = {
+        menu = {
+          open = open,
+          close = close,
+          is_open = is_open,
+        },
+        buf = state.buffer,
+      },
+    })
+
     -- TODO investicate vim.fn.getcharstr() a bit more for this
     local max_width = H.min_digits(#page_items, #H.hints.dictionary)
 
@@ -165,10 +181,6 @@ Snipe.menu = function(producer, callback)
     vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function()
       close()
     end, { nowait = true, buffer = state.buffer })
-  end
-
-  local function is_open()
-    return vim.api.nvim_win_is_valid(state.window) or not window_unset
   end
 
   return {
