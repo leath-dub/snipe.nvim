@@ -204,11 +204,15 @@ Snipe.toggle_buffer_menu = Snipe.create_buffer_menu_toggler
 ---@return table<integer>, table<string>
 Snipe.buffer_producer = function()
   local bufnrs = vim.tbl_filter(function (b)
-    return vim.api.nvim_buf_is_loaded(b) and vim.fn.buflisted(b) == 1 and (#vim.fn.bufname(b) > 0)
+    return vim.fn.buflisted(b) == 1
   end, vim.api.nvim_list_bufs())
 
   local bufnames = vim.tbl_map(function (b)
-    return vim.fn.bufname(b)
+    local name = vim.fn.bufname(b)
+    if #name == 0 then
+      return "[No Name]"
+    end
+    return name
   end, bufnrs)
 
   return bufnrs, bufnames
