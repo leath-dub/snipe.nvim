@@ -227,7 +227,6 @@ end
 Snipe.toggle_buffer_menu = Snipe.create_buffer_menu_toggler
 
 Snipe.open_buffer_menu = function(bopts_)
-	Snipe.create_buffer_menu_toggler(bopts_)()
   Snipe.create_buffer_menu_toggler(bopts_)()
 end
 
