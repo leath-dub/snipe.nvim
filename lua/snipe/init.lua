@@ -77,7 +77,7 @@ Snipe.menu = function(producer, callback)
       state.window = window_unset
       -- Set buffer options:
       --   buftype=nofile, buffer is not related to a file, will not be written
-      vim.api.nvim_buf_set_option(state.buffer, 'buftype', 'nofile')
+      vim.bo[state.buffer].buftype = "nofile"
     end
 
     local meta, items = producer()
