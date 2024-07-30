@@ -33,6 +33,11 @@ Snipe.config = {
     -- In case you changed your mind, provide a keybind that lets you
     -- cancel the snipe and close the window.
     cancel_snipe = "<esc>",
+
+    -- Close the buffer under the cursor
+    -- Remove "j" and "k" from your dictionary to navigate easier to delete
+    -- NOTE: Make sure you don't use the character below on your dictionary
+    close_buffer = "D",
   },
 }
 
@@ -180,6 +185,23 @@ Snipe.menu = function(producer, callback)
 
     vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function()
       close()
+    end, { nowait = true, buffer = state.buffer })
+
+    vim.keymap.set("n", Snipe.config.navigate.close_buffer, function()
+      local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
+      local line_count = vim.api.nvim_buf_line_count(state.buffer)
+      local at_last_line = cursor_pos[1] == line_count
+      local line_before_closing = cursor_pos[1]
+      local bufnr = meta[line_before_closing]
+      close()
+      vim.api.nvim_buf_delete(bufnr, { force = true })
+      open()
+      local new_line_count = vim.api.nvim_buf_line_count(state.buffer)
+      if at_last_line then
+        vim.api.nvim_win_set_cursor(state.window, { new_line_count, 0 })
+      else
+        vim.api.nvim_win_set_cursor(state.window, { math.min(line_before_closing, new_line_count), 0 })
+      end
     end, { nowait = true, buffer = state.buffer })
   end
 

@@ -62,7 +62,7 @@ Snipe.config = {
     position = "topleft",
   },
   hints = {
-    -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
+    -- Characters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
     dictionary = "sadflewcmpghio",
   },
   navigate = {
@@ -80,6 +80,11 @@ Snipe.config = {
     -- In case you changed your mind, provide a keybind that lets you
     -- cancel the snipe and close the window.
     cancel_snipe = "<esc>",
+
+    -- Close the buffer under the cursor
+    -- Remove "j" and "k" from your dictionary to navigate easier to delete
+    -- NOTE: Make sure you don't use the character below in your dictionary
+    close_buffer = "D",
   },
 }
 ```
