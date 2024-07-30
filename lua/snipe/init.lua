@@ -293,6 +293,10 @@ H.setup_config = function(config)
     return config
   end
 
+  -- This makes the function idempotent
+  H.hints.dictionary_index = {}
+  H.hints.dictionary = {}
+
   for i = 1, #config.hints.dictionary do
     local c = config.hints.dictionary:sub(i, i)
     if H.hints.dictionary_index[c] ~= nil then -- duplicate
