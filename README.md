@@ -32,11 +32,10 @@ For `lazy.nvim`:
 ```lua
 {
   "leath-dub/snipe.nvim",
-  config = function()
-    local snipe = require("snipe")
-    snipe.setup()
-    vim.keymap.set("n", "gb", snipe.create_buffer_menu_toggler())
-  end
+  keys = {
+    {"gb", function () require("snipe").open_buffer_menu() end, desc = "Open Snipe buffer menu"}
+  },
+  opts = {}
 }
 ```
 
@@ -46,7 +45,7 @@ For `packadd` (builtin package manager), clone the repo into `$HOME/.config/nvim
 vim.cmd.packadd "snipe.nvim"
 local snipe = require("snipe")
 snipe.setup()
-vim.keymap.set("n", "gb", snipe.create_buffer_menu_toggler())
+vim.keymap.set("n", "gb", snipe.open_buffer_menu())
 ```
 
 ## Options
