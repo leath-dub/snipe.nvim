@@ -297,11 +297,13 @@ Snipe.buffer_producer = function(opts_)
 
     ---@type string buf
     for _, buf in ipairs(explode_string(buffers["output"], '\n')) do
-      local bufnr = string.match(buf, '%d+')
+      local bufnr = tonumber(string.match(buf, '%d+'))
       local bufname = string.match(buf, '".*"'):gsub('"', '')
 
-      table.insert(bufnrs, tonumber(bufnr))
-      table.insert(bufnames, bufname)
+      if vim.fn.buflisted(bufnr) then
+        table.insert(bufnrs, bufnr)
+        table.insert(bufnames, bufname)
+      end
     end
   end
 
