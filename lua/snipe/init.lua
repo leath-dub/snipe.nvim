@@ -35,7 +35,7 @@ Snipe.config = {
     cancel_snipe = "<esc>",
   },
   -- The default sort used for the buffers
-  -- Can be any of "last", (sort buffers by last opened) "default" (sort buffers by its number)
+  -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
   sort = "default"
 }
 
