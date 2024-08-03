@@ -236,14 +236,41 @@ end
 -- Helper function used to explode a string at a certain separator
 -- Used for the "last" sort option
 local function explode_string(str, sep)
-    if sep == nil then
-        sep = "|"
+  local t = {}
+  for s in str:gmatch("([^"..sep.."]+)") do
+      table.insert(t, s)
+  end
+  return t
+end
+
+local function get_buffer_name(bufnr, opts)
+  local name = vim.fn.bufname(bufnr)
+  if #name == 0 then
+    return "[No Name]"
+  end
+
+  local res = name:gsub(vim.env.HOME, "~", 1)
+
+  if opts.max_path_width ~= nil then
+    local rem = name
+    res = ""
+    for _ = 1, opts.max_path_width do
+      if vim.fs.dirname(rem) == rem then
+        break
+      end
+      if res ~= "" then
+        res = "/" .. res
+      end
+      if rem == vim.env.HOME then
+        res = "~" .. res
+      else
+        res = vim.fs.basename(rem) .. res
+      end
+      rem = vim.fs.dirname(rem)
     end
-    local t = {}
-    for s in str:gmatch("([^"..sep.."]+)") do
-        table.insert(t, s)
-    end
-    return t
+  end
+
+  return res
 end
 
 --- Buffer producer lists open buffers
@@ -263,34 +290,7 @@ Snipe.buffer_producer = function(opts_)
 
     -- Get the buffers name
     bufnames = vim.tbl_map(function (b)
-
-      local name = vim.fn.bufname(b)
-      if #name == 0 then
-        return "[No Name]"
-      end
-
-      local res = name:gsub(vim.env.HOME, "~", 1)
-
-      if opts.max_path_width ~= nil then
-        local rem = name
-        res = ""
-        for _ = 1, opts.max_path_width do
-          if vim.fs.dirname(rem) == rem then
-            break
-          end
-          if res ~= "" then
-            res = "/" .. res
-          end
-          if rem == vim.env.HOME then
-            res = "~" .. res
-          else
-            res = vim.fs.basename(rem) .. res
-          end
-          rem = vim.fs.dirname(rem)
-        end
-      end
-
-      return res
+      return get_buffer_name(b, opts)
     end, bufnrs)
   elseif Snipe.config.sort == "last" then
     local buffers = vim.api.nvim_exec2("ls t", { output = true })
@@ -298,11 +298,10 @@ Snipe.buffer_producer = function(opts_)
     ---@type string buf
     for _, buf in ipairs(explode_string(buffers["output"], '\n')) do
       local bufnr = tonumber(string.match(buf, '%d+'))
-      local bufname = string.match(buf, '".*"'):gsub('"', '')
 
       if vim.fn.buflisted(bufnr) then
         table.insert(bufnrs, bufnr)
-        table.insert(bufnames, bufname)
+        table.insert(bufnames, get_buffer_name(bufnr, opts))
       end
     end
   end
