@@ -80,6 +80,9 @@ Snipe.config = {
     -- cancel the snipe and close the window.
     cancel_snipe = "<esc>",
   },
+  -- Define the way buffers are sorted by default
+  -- Can be any of "default" (sort buffers by their number) or "last" (sort buffers by last accessed)
+  sort = "default"
 }
 ```
 

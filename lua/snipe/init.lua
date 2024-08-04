@@ -235,7 +235,7 @@ end
 
 -- Helper function used to explode a string at a certain separator
 -- Used for the "last" sort option
-local function explode_string(str, sep)
+H.explode_string = function(str, sep)
   local t = {}
   for s in str:gmatch("([^"..sep.."]+)") do
       table.insert(t, s)
@@ -243,7 +243,8 @@ local function explode_string(str, sep)
   return t
 end
 
-local function get_buffer_name(bufnr, opts)
+-- Return the buffer name from its buffer number
+H.get_buffer_name = function(bufnr, opts)
   local name = vim.fn.bufname(bufnr)
   if #name == 0 then
     return "[No Name]"
@@ -290,18 +291,18 @@ Snipe.buffer_producer = function(opts_)
 
     -- Get the buffers name
     bufnames = vim.tbl_map(function (b)
-      return get_buffer_name(b, opts)
+      return H.get_buffer_name(b, opts)
     end, bufnrs)
   elseif Snipe.config.sort == "last" then
     local buffers = vim.api.nvim_exec2("ls t", { output = true })
 
-    ---@type string buf
-    for _, buf in ipairs(explode_string(buffers["output"], '\n')) do
+    --- @type string buf
+    for _, buf in ipairs(H.explode_string(buffers["output"], '\n')) do
       local bufnr = tonumber(string.match(buf, '%d+'))
 
       if vim.fn.buflisted(bufnr) then
         table.insert(bufnrs, bufnr)
-        table.insert(bufnames, get_buffer_name(bufnr, opts))
+        table.insert(bufnames, H.get_buffer_name(bufnr, opts))
       end
     end
   end
