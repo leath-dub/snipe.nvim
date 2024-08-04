@@ -34,6 +34,9 @@ Snipe.config = {
     -- cancel the snipe and close the window.
     cancel_snipe = "<esc>",
   },
+  -- The default sort used for the buffers
+  -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
+  sort = "default"
 }
 
 --- Creates a snipe menu
@@ -230,46 +233,80 @@ Snipe.open_buffer_menu = function(bopts_)
   Snipe.create_buffer_menu_toggler(bopts_)()
 end
 
+-- Helper function used to explode a string at a certain separator
+-- Used for the "last" sort option
+H.explode_string = function(str, sep)
+  local t = {}
+  for s in str:gmatch("([^"..sep.."]+)") do
+      table.insert(t, s)
+  end
+  return t
+end
+
+-- Return the buffer name from its buffer number
+H.get_buffer_name = function(bufnr, opts)
+  local name = vim.fn.bufname(bufnr)
+  if #name == 0 then
+    return "[No Name]"
+  end
+
+  local res = name:gsub(vim.env.HOME, "~", 1)
+
+  if opts.max_path_width ~= nil then
+    local rem = name
+    res = ""
+    for _ = 1, opts.max_path_width do
+      if vim.fs.dirname(rem) == rem then
+        break
+      end
+      if res ~= "" then
+        res = "/" .. res
+      end
+      if rem == vim.env.HOME then
+        res = "~" .. res
+      else
+        res = vim.fs.basename(rem) .. res
+      end
+      rem = vim.fs.dirname(rem)
+    end
+  end
+
+  return res
+end
+
 --- Buffer producer lists open buffers
 ---
 ---@return table<integer>, table<string>
 Snipe.buffer_producer = function(opts_)
   local opts = opts_ or {}
 
-  local bufnrs = vim.tbl_filter(function (b)
-    return vim.fn.buflisted(b) == 1
-  end, vim.api.nvim_list_bufs())
+  local bufnrs = {}
+  local bufnames = {}
 
-  local bufnames = vim.tbl_map(function (b)
+  if Snipe.config.sort == "default" then
+    -- Get the buffers number
+    bufnrs = vim.tbl_filter(function (b)
+      return vim.fn.buflisted(b) == 1
+    end, vim.api.nvim_list_bufs())
 
-    local name = vim.fn.bufname(b)
-    if #name == 0 then
-      return "[No Name]"
-    end
+    -- Get the buffers name
+    bufnames = vim.tbl_map(function (b)
+      return H.get_buffer_name(b, opts)
+    end, bufnrs)
+  elseif Snipe.config.sort == "last" then
+    local buffers = vim.api.nvim_exec2("ls t", { output = true })
 
-    local res = name:gsub(vim.env.HOME, "~", 1)
+    --- @type string buf
+    for _, buf in ipairs(H.explode_string(buffers["output"], '\n')) do
+      local bufnr = tonumber(string.match(buf, '%d+'))
 
-    if opts.max_path_width ~= nil then
-      local rem = name
-      res = ""
-      for _ = 1, opts.max_path_width do
-        if vim.fs.dirname(rem) == rem then
-          break
-        end
-        if res ~= "" then
-          res = "/" .. res
-        end
-        if rem == vim.env.HOME then
-          res = "~" .. res
-        else
-          res = vim.fs.basename(rem) .. res
-        end
-        rem = vim.fs.dirname(rem)
+      if vim.fn.buflisted(bufnr) then
+        table.insert(bufnrs, bufnr)
+        table.insert(bufnames, H.get_buffer_name(bufnr, opts))
       end
     end
+  end
 
-    return res
-  end, bufnrs)
 
   return bufnrs, bufnames
 end
