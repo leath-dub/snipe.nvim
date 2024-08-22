@@ -362,7 +362,7 @@ H.annotate_with_tags = function(items)
 
   return vim.tbl_map(function (ent)
     i = i + 1
-    return {tags[i], ent}
+    return {tags[i], vim.fn.fnamemodify(ent, ":.")}
   end, items)
 end
 
