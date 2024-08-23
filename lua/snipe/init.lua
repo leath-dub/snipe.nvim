@@ -245,7 +245,7 @@ end
 
 -- Return the buffer name from its buffer number
 H.get_buffer_name = function(bufnr, opts)
-  local name = vim.fn.bufname(bufnr)
+  local name = vim.fn.fnamemodify(vim.fn.bufname(bufnr), ":.")
   if #name == 0 then
     return "[No Name]"
   end
@@ -362,7 +362,7 @@ H.annotate_with_tags = function(items)
 
   return vim.tbl_map(function (ent)
     i = i + 1
-    return {tags[i], vim.fn.fnamemodify(ent, ":.")}
+    return {tags[i], ent}
   end, items)
 end
 
