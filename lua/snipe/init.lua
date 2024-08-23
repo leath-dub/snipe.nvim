@@ -245,7 +245,7 @@ end
 
 -- Return the buffer name from its buffer number
 H.get_buffer_name = function(bufnr, opts)
-  local name = vim.fn.bufname(bufnr)
+  local name = vim.fn.fnamemodify(vim.fn.bufname(bufnr), ":.")
   if #name == 0 then
     return "[No Name]"
   end
