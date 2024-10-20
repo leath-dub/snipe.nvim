@@ -45,7 +45,7 @@ For `packadd` (builtin package manager), clone the repo into `$HOME/.config/nvim
 vim.cmd.packadd "snipe.nvim"
 local snipe = require("snipe")
 snipe.setup()
-vim.keymap.set("n", "gb", snipe.open_buffer_menu())
+vim.keymap.set("n", "gb", snipe.open_buffer_menu)
 ```
 
 ## Options
