@@ -13,6 +13,14 @@ Snipe.config = {
     -- Where to place the ui window
     -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
     position = "topleft",
+    -- Override options passed to `nvim_open_win`
+    -- Be careful with this as snipe will not validate
+    -- anything you override here. See `:h nvim_open_win`
+    -- for config options
+    open_win_override = {
+      -- title = "My Window Title",
+      border = "single", -- use "rounded" for rounded border
+    },
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
@@ -352,10 +360,14 @@ H.setup_config = function(config)
   vim.validate({
     ["ui.max_width"] = { config.ui.max_width, "number", true },
     ["ui.position"] = { config.ui.position, "string", true },
+    ["ui.open_win_override"] = { config.ui.open_win_override, "table", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
     ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
+    ["navigate.cancel_snipe"] = { config.navigate.cancel_snipe, "string", true },
+    ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
+    ["sort"] = { config.sort, "string", true },
   })
 
   -- Validate hint characters and setup tables
@@ -491,7 +503,7 @@ H.create_window = function(bufnr, height, width)
     vim.notify("(snipe) unrecognized position", vim.log.levels.WARN)
   end
 
-  local winnr = vim.api.nvim_open_win(bufnr, false, {
+  local window_opts = vim.tbl_extend("keep", Snipe.config.ui.open_win_override, {
     title = "Snipe",
     anchor = anchor,
     border = "single",
@@ -504,7 +516,7 @@ H.create_window = function(bufnr, height, width)
     zindex = 99,
   })
 
-  return winnr
+  return vim.api.nvim_open_win(bufnr, false, window_opts)
 end
 
 H.create_default_hl = function()
