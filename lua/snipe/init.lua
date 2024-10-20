@@ -462,7 +462,9 @@ H.generate_tags = function(n)
 end
 
 H.create_buffer = function()
-  return vim.api.nvim_create_buf(false, false)
+  local bufnr = vim.api.nvim_create_buf(false, false)
+  vim.bo[bufnr].filetype = "snipe-menu"
+  return bufnr
 end
 
 H.create_window = function(bufnr, height, width)
