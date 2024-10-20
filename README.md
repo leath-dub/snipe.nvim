@@ -59,9 +59,17 @@ Snipe.config = {
     -- Where to place the ui window
     -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
     position = "topleft",
+    -- Override options passed to `nvim_open_win`
+    -- Be careful with this as snipe will not validate
+    -- anything you override here. See `:h nvim_open_win`
+    -- for config options
+    open_win_override = {
+      -- title = "My Window Title",
+      border = "single", -- use "rounded" for rounded border
+    },
   },
   hints = {
-    -- Characters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
+    -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
     dictionary = "sadflewcmpghio",
   },
   navigate = {
@@ -82,11 +90,11 @@ Snipe.config = {
 
     -- Close the buffer under the cursor
     -- Remove "j" and "k" from your dictionary to navigate easier to delete
-    -- NOTE: Make sure you don't use the character below in your dictionary
+    -- NOTE: Make sure you don't use the character below on your dictionary
     close_buffer = "D",
   },
-  -- Define the way buffers are sorted by default
-  -- Can be any of "default" (sort buffers by their number) or "last" (sort buffers by last accessed)
+  -- The default sort used for the buffers
+  -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
   sort = "default"
 }
 ```
