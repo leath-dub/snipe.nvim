@@ -233,7 +233,7 @@ Snipe.menu = function(producer, callback, menu_context)
       local split_direction = vim.opt.splitbelow:get() and "below" or "above"
       close()
 
-      vim.api.nvim_open_win(bufnr, false, {
+      vim.api.nvim_open_win(bufnr, true, {
         split = split_direction,
         win = 0,
       })
@@ -243,7 +243,7 @@ Snipe.menu = function(producer, callback, menu_context)
       local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
       local bufnr = meta[cursor_pos[1]]
       close()
-      vim.api.nvim_open_win(bufnr, false, {
+      vim.api.nvim_open_win(bufnr, true, {
         vertical = true,
         win = 0,
       })
