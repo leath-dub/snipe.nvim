@@ -38,6 +38,12 @@ Snipe.config = {
     -- cursor
     under_cursor = "<cr>",
 
+    -- You can also open the selecting item under the cursor in
+    -- [vertical|horizontal] split.
+    -- NOTE: Make sure you don't use the characters below on your dictionary
+    open_in_split = "S",
+    open_in_vsplit = "<C-v>",
+
     -- In case you changed your mind, provide a keybind that lets you
     -- cancel the snipe and close the window.
     cancel_snipe = "<esc>",
@@ -219,6 +225,25 @@ Snipe.menu = function(producer, callback, menu_context)
       else
         vim.api.nvim_win_set_cursor(state.window, { math.min(line_before_closing, new_line_count), 0 })
       end
+    end, { nowait = true, buffer = state.buffer })
+
+    vim.keymap.set("n", Snipe.config.navigate.open_in_split, function()
+      local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
+      local bufnr = meta[cursor_pos[1]]
+      close()
+      vim.api.nvim_open_win(bufnr, false, {
+        win = 0,
+      })
+    end, { nowait = true, buffer = state.buffer })
+
+    vim.keymap.set("n", Snipe.config.navigate.open_in_vsplit, function()
+      local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
+      local bufnr = meta[cursor_pos[1]]
+      close()
+      vim.api.nvim_open_win(bufnr, false, {
+        vertical = true,
+        win = 0,
+      })
     end, { nowait = true, buffer = state.buffer })
   end
 
