@@ -230,8 +230,11 @@ Snipe.menu = function(producer, callback, menu_context)
     vim.keymap.set("n", Snipe.config.navigate.open_in_split, function()
       local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
       local bufnr = meta[cursor_pos[1]]
+      local split_direction = vim.opt:get("splitbelow") and "below" or "above"
       close()
+
       vim.api.nvim_open_win(bufnr, false, {
+        split = split_direction,
         win = 0,
       })
     end, { nowait = true, buffer = state.buffer })
