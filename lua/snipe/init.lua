@@ -287,6 +287,10 @@ H.get_buffer_name = function(bufnr, opts)
 
   local res = name:gsub(vim.env.HOME, "~", 1)
 
+  if vim.api.nvim_get_option_value("modified", { buf = bufnr }) then
+    return res .. " [m]"
+  end
+
   if opts.max_path_width ~= nil then
     local rem = name
     res = ""
