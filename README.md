@@ -2,11 +2,7 @@
 
 Efficient targetted menu built for fast buffer navigation
 
-
-
 ![recording](https://github.com/user-attachments/assets/a0804e7f-5a04-4e5c-9274-e5eab7a36dc7)
-
-
 
 ## Description
 
@@ -55,7 +51,7 @@ You can pass in a table of options to the `setup` function, here are the default
 ```lua
 Snipe.config = {
   ui = {
-    max_width = -1, -- -1 means dynamic width
+    max_height = -1, -- -1 means dynamic height
     -- Where to place the ui window
     -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
     position = "topleft",
@@ -67,6 +63,9 @@ Snipe.config = {
       -- title = "My Window Title",
       border = "single", -- use "rounded" for rounded border
     },
+
+    -- Preselect the currently open buffer
+    preselect_current = true,
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
@@ -92,6 +91,12 @@ Snipe.config = {
     -- Remove "j" and "k" from your dictionary to navigate easier to delete
     -- NOTE: Make sure you don't use the character below on your dictionary
     close_buffer = "D",
+
+    -- Open buffer in vertical split
+    open_vsplit = "V",
+
+    -- Open buffer in split, based on `vim.opt.splitbelow`
+    open_split = "H",
   },
   -- The default sort used for the buffers
   -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
@@ -99,73 +104,61 @@ Snipe.config = {
 }
 ```
 
-You can also pass options to `create_buffer_menu_toggler`:
+## Development
+
+The older API, as I am sure contributors are aware, was shite! The new API is
+based on creating a `Menu` which is just a state object mostly just maintaining
+a buffer, a window and what page you are on. There is no longer a concept of
+`generator`/`producer` functions, each call to `open` on the window just
+accepts a list of items to show. All of the old global config was implemented
+much easier using this api. A minimal example of a menu is the following:
 
 ```lua
-{
-  -- Limit the width of path buffer names
-  -- /my/long/path/is/really/annoying will be is/really/annoying (max of 3)
-  max_path_width = 3
+local Menu = require("snipe.menu")
+local menu = Menu:new {
+  -- Per-menu configuration (does not affect global configuration)
+  position = "center"
 }
+
+-- The items to snipe is just an array
+-- Be careful how you reference the array in closures though
+-- if you have the items table created inside a closure
+-- as uncommented when setting the open keymap a few lines down,
+-- this means that the items array will change every trigger and
+-- can be an outdated capture in sub-closures.
+local items = { "foo", "bar", "baz" }
+
+vim.keymap.set("n", "gb", function()
+  -- local items = { ... }
+
+  -- This method allows you to add `n' callbacks to be
+  -- triggered whenever a new buffer is created.
+  -- A new buffer is only ever created if it is somehow
+  -- externally removed or at normal startup. The reason
+  -- For this system is so that you can update any buffer local
+  -- keymaps and alike to work for the new buffer.
+  menu:add_new_buffer_callback(function(m)
+    -- `m` is a reference to the menu, prefer referencing it via this (i.e. not through your menu variable) !
+
+    -- Keymaps like "open in split" etc can be put in here
+    print("I dont want any other keymaps X( !")
+  end)
+
+  menu:open(items, function (m, i)
+    -- Prefer accessing items on the menu itself (m.items not items) !
+    print("You selected: " .. m.items[i])
+    print("You are hovering over: " .. m.items[m:hovered()])
+    -- Close the menu
+    m:close()
+    -- You can also call `reopen` for things like navigating
+    -- between pages when the window can stay open and just
+    -- needs to be updated.
+  end, function (item)
+    -- Format function means you don't just have to pass a list of strings
+    -- you get to format each item as you choose.
+    return item
+  end, 10 -- the item to preselect, if it is out of bounds of the currently shown page
+          -- it is ignored
+  )
+end)
 ```
-
-## Events
-
-The following `User` events can be hooked into:
-
-* `SnipeCreateBuffer` - event is triggered after tag and default mappings are set. The following code allows you to hook into this:
-
-```lua
-vim.api.nvim_create_autocmd("User", {
-  pattern = "SnipeCreateBuffer",
-  callback = function (args)
-    -- | Format of `args`:
-    --
-    -- args = {
-    --   data = {
-    --     menu = {
-    --       close = <function>,
-    --       open = <function>,
-    --       is_open = <function>,
-    --     }
-    --     buf = <menu bufnr>,
-    --   }
-    -- }
-
-    -- Do something with args
-  end,
-})
-```
-
-## Producers
-
-A producer is just a function that returns two lists (tables), the first is a `user/meta-data` table, this is will
-later be passed into a callback allowing you to give context to the selections (e.g. for buffer producer the `meta-data`
-is the list of buffer-id's). The second table is the list of actual strings you want to list as selections.
-
-Below is an example of a file producer:
-
-```lua
-local function file_menu_toggler()
-  local function file_producer()
-    local uv = (vim.loop or vim.uv)
-    local items = {}
-
-    for name, type in vim.fs.dir(uv.cwd()) do
-      table.insert(items, { type, name })
-    end
-
-    local items_display = vim.tbl_map(function (ent)
-      return string.format("%s %s", (ent[1] == "file" and "F" or "D"), ent[2])
-    end, items)
-
-    return items, items_display
-  end
-
-  return snipe.create_menu_toggler(file_producer, function (meta, _) vim.cmd.edit(meta[2]) end)
-end
-
-vim.keymap.set("n", "<leader>f", file_menu_toggler())
-```
-
-This lets you navigate files in the current directory with `<leader>f`
