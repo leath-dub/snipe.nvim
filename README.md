@@ -175,6 +175,13 @@ local function set_keymaps(m)
   vim.keymap.set("n", "<esc>", function()
     m:close()
   end, { nowait = true, buffer = m.buf })
+  vim.keymap.set("n", "..", function()
+    local cur = vim.fs.dirname(m.items[1].name)
+    local dir = ".." .. (cur == "." and "" or "/" .. cur)
+    new_dir(dir)
+    m.items = items
+    m:reopen()
+  end, { nowait = true, buffer = m.buf })
 end
 menu:add_new_buffer_callback(set_keymaps)
 
