@@ -163,6 +163,60 @@ vim.keymap.set("n", "gb", function()
 end)
 ```
 
+### Example ( File browser )
+
+```lua
+local uv = vim.uv or vim.loop
+
+local menu = require("snipe.menu"):new()
+local items
+
+local function set_keymaps(m)
+  vim.keymap.set("n", "<esc>", function()
+    m:close()
+  end, { nowait = true, buffer = m.buf })
+end
+menu:add_new_buffer_callback(set_keymaps)
+
+local function new_dir(dir_name)
+  local dir = uv.fs_opendir(dir_name)
+  items = {}
+  while true do
+    local ent = dir:readdir()
+    if not ent then
+      break
+    end
+
+    if dir_name ~= uv.cwd() then
+      ent[1].name = dir_name .. "/" .. ent[1].name
+    end
+
+    table.insert(items, ent[1])
+  end
+  dir:closedir()
+end
+
+vim.keymap.set("n", "cd", function()
+  new_dir(uv.cwd())
+
+  menu:open(items, function(m, i)
+    if m.items[i].type == "directory" then
+      new_dir(m.items[i].name)
+      m.items = items
+      m:reopen()
+    else
+      m:close()
+      vim.cmd.edit(m.items[i].name)
+    end
+  end, function (item)
+    if item.type == "directory" then
+      return item.name .. "/"
+    end
+    return item.name
+  end)
+end)
+```
+
 ### Example (Modal Buffer menu)
 
 The following code has a single menu that has different actions on the selected
