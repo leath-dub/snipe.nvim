@@ -176,9 +176,11 @@ local function set_keymaps(m)
     m:close()
   end, { nowait = true, buffer = m.buf })
   vim.keymap.set("n", "..", function()
-    local cur = vim.fs.dirname(m.items[1].name)
-    local dir = ".." .. (cur == "." and "" or "/" .. cur)
-    new_dir(dir)
+    local dir = vim.fs.dirname(m.items[1].name)
+    if uv.fs_realpath(dir) ~= "/" then
+      dir = ".." .. (dir == "." and "" or "/" .. dir)
+    end
+    new_dir(vim.fn.resolve(dir))
     m.items = items
     m:reopen()
   end, { nowait = true, buffer = m.buf })
