@@ -19,7 +19,7 @@ local Menu = {
 
 Menu.__index = Menu
 
-local Slice = require("snipe2.slice")
+local Slice = require("snipe.slice")
 
 -- Table for helper stuff
 local H = {}

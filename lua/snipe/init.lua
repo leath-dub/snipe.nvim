@@ -4,7 +4,7 @@ local H = {}
 Snipe.setup = function(config)
   Snipe.config = H.setup_config(config)
 
-  local SnipeMenu = require("snipe2.menu")
+  local SnipeMenu = require("snipe.menu")
   Snipe.global_menu = SnipeMenu:new { dictionary = Snipe.config.hints.dictionary, position = Snipe.config.ui.position, open_win_override = Snipe.config.ui.open_win_override, max_height = Snipe.config.ui.max_height }
   Snipe.global_items = {}
 end
@@ -152,7 +152,7 @@ end
 
 function Snipe.open_buffer_menu()
   local cmd = Snipe.config.sort == "last" and "ls t" or "ls"
-  Snipe.global_items = require("snipe2.buffer").get_buffers(cmd)
+  Snipe.global_items = require("snipe.buffer").get_buffers(cmd)
   Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
 
   if Snipe.config.ui.preselect_current then
