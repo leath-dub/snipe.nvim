@@ -162,3 +162,47 @@ vim.keymap.set("n", "gb", function()
   )
 end)
 ```
+
+### Example (Modal Buffer menu)
+
+The following code has a single menu that has different actions on the selected
+item depending on what keybind you open it with (`<leader>o` or `<leader>d`):
+
+```lua
+local menu = require("snipe.menu"):new()
+local items
+
+-- Other default mappings can be set here too
+local function set_keymaps(m)
+  vim.keymap.set("n", "<esc>", function()
+    m:close()
+  end, { nowait = true, buffer = m.buf })
+end
+menu:add_new_buffer_callback(set_keymaps)
+
+vim.keymap.set("n", "<leader>o", function()
+  items = require("snipe.buffer").get_buffers()
+  menu.config.open_win_override.title = "Snipe [Open]"
+  menu:open(items, function(m, i)
+    m:close()
+    vim.api.nvim_set_current_buf(m.items[i].id)
+  end, function (item) return item.name end)
+end)
+
+vim.keymap.set("n", "<leader>d", function()
+  items = require("snipe.buffer").get_buffers()
+  menu.config.open_win_override.title = "Snipe [Delete]"
+  menu:open(items, function(m, i)
+    local bufnr = m.items[i].id
+    -- I have to hack switch back to main window, otherwise currently background focused
+    -- window cannot be deleted when focused on a floating window
+    local current_tabpage = vim.api.nvim_get_current_tabpage()
+    local root_win = vim.api.nvim_tabpage_list_wins(current_tabpage)[1]
+    vim.api.nvim_set_current_win(root_win)
+    vim.api.nvim_buf_delete(bufnr, { force = true })
+    vim.api.nvim_set_current_win(m.win)
+    table.remove(m.items, i)
+    m:reopen()
+  end, function (item) return item.name end)
+end)
+```

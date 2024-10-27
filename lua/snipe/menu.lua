@@ -81,6 +81,10 @@ function Menu:open(items, tag_followed, fmt, preselect)
     end
   end
 
+  if self.config.open_win_override.title ~= nil then
+    widest_line_width = math.max(widest_line_width, #self.config.open_win_override.title)
+  end
+
   -- Maintain buffer and window
   self:ensure_buffer()
   if self.win ~= unset and vim.api.nvim_win_is_valid(self.win) then
