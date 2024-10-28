@@ -1,5 +1,8 @@
 # Snipe.nvim
 
+**NOTE**: Main development is now on the branch `snipe2`, try it out and let me know what
+you think! To switch to the branch just add `branch = "snipe2"` in your lazy plugin spec.
+
 Efficient targetted menu built for fast buffer navigation
 
 
