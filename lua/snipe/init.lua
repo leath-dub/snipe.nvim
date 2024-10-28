@@ -95,13 +95,13 @@ end
 
 function Snipe.default_keymaps(m)
   local nav_next = function()
-    Snipe.global_menu:goto_next_page()
-    Snipe.global_menu:reopen()
+    m:goto_next_page()
+    m:reopen()
   end
 
   local nav_prev = function()
-    Snipe.global_menu:goto_prev_page()
-    Snipe.global_menu:reopen()
+    m:goto_prev_page()
+    m:reopen()
   end
 
   vim.keymap.set("n", Snipe.config.navigate.next_page, nav_next, { nowait = true, buffer = m.buf })
@@ -169,6 +169,28 @@ function Snipe.open_buffer_menu()
   else
     Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt)
   end
+end
+
+Snipe.ui_select_menu = nil
+
+-- Can be set as your `vim.ui.select`
+---@param items any[] Arbitrary items
+---@param opts table Additional options
+---@param on_choice fun(item: any|nil, idx: integer|nil)
+function Snipe.ui_select(items, opts, on_choice)
+  if Snipe.ui_select_menu == nil then
+    vim.notify("Must instanciate `require('snipe').ui_select_menu' before using `ui_select'", vim.log.levels.ERROR)
+    return
+  end
+
+  if opts.prompt ~= nil then
+    Snipe.ui_select_menu.config.open_win_override.title = opts.prompt
+  end
+  Snipe.ui_select_menu:open(items, function(m, i)
+    on_choice(m.items[i], i)
+    m:close()
+  end, opts.format_item)
+  Snipe.ui_select_menu.config.open_win_override.title = Snipe.config.ui.open_win_override.title
 end
 
 return Snipe

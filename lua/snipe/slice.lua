@@ -9,9 +9,10 @@ function Slice:new(array, offset, len)
   assert(offset <= #array, "offset out of bounds of the array")
   assert(len <= #array, "len is larger than the backed array")
 
-  self.array = array
-  self.offset = offset
-  self.len = len
+  o.__index = self
+  o.array = array
+  o.offset = offset
+  o.len = len
 
   return o
 end

@@ -38,8 +38,9 @@ H.default_config = {
 --- @param config ?table
 function Menu:new(config)
   local o = setmetatable({}, self)
-  self.config = vim.tbl_extend("keep", config or {}, H.default_config)
-  self.dict, self.dict_index = H.generate_dict_structs(self.config.dictionary)
+  o.__index = self
+  o.config = vim.tbl_extend("keep", config or {}, H.default_config)
+  o.dict, o.dict_index = H.generate_dict_structs(o.config.dictionary)
   return o
 end
 
