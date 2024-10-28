@@ -5,7 +5,7 @@ Efficient targetted menu built for fast buffer navigation
 ![recording](https://github.com/user-attachments/assets/a0804e7f-5a04-4e5c-9274-e5eab7a36dc7)
 
 ![20241028_17h05m16s_grim](https://github.com/user-attachments/assets/48757fd7-dcd1-42c8-8385-02b43bcd0bdc)
-Also useful as a general menu.
+Also useful as a general menu (see ## `vim.ui.select` wrapper).
 
 ## Description
 
