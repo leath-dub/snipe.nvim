@@ -110,13 +110,6 @@ Snipe nvim can act as your `vim.ui.select` menu, which is what is used for "code
 among other things. You can set this up like so:
 
 ```lua
-vim.ui.select = require("snipe").ui_select
-```
-
-This will use the same menu configuration as the global snipe menu. If you want to customize this you
-can assign a different menu to the `ui_select_menu` global:
-
-```lua
 local snipe = require("snipe")
 snipe.ui_select_menu = require("snipe.menu"):new { position = "center" }
 snipe.ui_select_menu:add_new_buffer_callback(function (m)
