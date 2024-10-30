@@ -5,7 +5,7 @@ Snipe.setup = function(config)
   Snipe.config = H.setup_config(config)
 
   local SnipeMenu = require("snipe.menu")
-  Snipe.global_menu = SnipeMenu:new { dictionary = Snipe.config.hints.dictionary, position = Snipe.config.ui.position, open_win_override = Snipe.config.ui.open_win_override, max_height = Snipe.config.ui.max_height }
+  Snipe.global_menu = SnipeMenu:new { dictionary = Snipe.config.hints.dictionary, position = Snipe.config.ui.position, open_win_override = Snipe.config.ui.open_win_override, max_height = Snipe.config.ui.max_height, align = Snipe.config.ui.text_align }
   Snipe.global_items = {}
 end
 
@@ -26,6 +26,9 @@ H.default_config = {
 
     -- Preselect the currently open buffer
     preselect_current = true,
+
+    -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
+    text_align = "left",
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
@@ -73,6 +76,7 @@ H.setup_config = function(config)
     ["ui.position"] = { config.ui.position, "string", true },
     ["ui.open_win_override"] = { config.ui.open_win_override, "table", true },
     ["ui.preselect_current"] = { config.ui.preselect_current, "boolean", true },
+    ["ui.text_align"] = { config.ui.text_align, "string", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },

@@ -33,6 +33,7 @@ H.default_config = {
 
   -- unset means no maximum
   max_height = unset,
+  align = "left", -- could also be "left"
 }
 
 --- @param config ?table
@@ -75,16 +76,37 @@ function Menu:open(items, tag_followed, fmt, preselect)
   -- The actual list of strings that are displayed
   local widest_line_width = 0
   local display_lines = {}
-  for i, item in self.display_items:ipairs() do
-    display_lines[i] = string.format("%s %s", tags[i], fmt and fmt(item) or item)
-    if #display_lines[i] > widest_line_width then
-      widest_line_width = #display_lines[i]
+
+  if self.config.align == "right" then
+    local widest = #self.display_items[1]
+    for _, item in self.display_items:ipairs() do
+      local fmtd = fmt and fmt(item) or item
+      if #fmtd > widest then
+        widest = #fmtd
+      end
+    end
+
+    for i, item in self.display_items:ipairs() do
+      local fmtd = fmt and fmt(item) or item
+      local align = (" "):rep(widest - #fmtd)
+      display_lines[i] = string.format("%s %s%s", tags[i], align, fmtd)
+      if #display_lines[i] > widest_line_width then
+        widest_line_width = #display_lines[i]
+      end
+    end
+  else
+    for i, item in self.display_items:ipairs() do
+      display_lines[i] = string.format("%s %s", tags[i], fmt and fmt(item) or item)
+      if #display_lines[i] > widest_line_width then
+        widest_line_width = #display_lines[i]
+      end
     end
   end
 
   if self.config.open_win_override.title ~= nil then
     widest_line_width = math.max(widest_line_width, #self.config.open_win_override.title)
   end
+
 
   -- Maintain buffer and window
   self:ensure_buffer()

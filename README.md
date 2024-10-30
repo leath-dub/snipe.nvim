@@ -69,6 +69,9 @@ Snipe.config = {
 
     -- Preselect the currently open buffer
     preselect_current = true,
+
+    -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
+    text_align = "left",
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
