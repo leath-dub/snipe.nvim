@@ -2,14 +2,23 @@ local Snipe = {}
 local H = {}
 
 Snipe.setup = function(config)
-  config = H.setup_config(config)
-  H.apply_config(config)
-  H.create_default_hl()
+  Snipe.config = H.setup_config(config)
+
+  local SnipeMenu = require("snipe.menu")
+  Snipe.global_menu = SnipeMenu:new {
+    dictionary = Snipe.config.hints.dictionary,
+    position = Snipe.config.ui.position,
+    open_win_override = Snipe.config.ui.open_win_override,
+    max_height = Snipe.config.ui.max_height,
+    align = Snipe.config.ui.text_align,
+    map_tags = Snipe.default_map_tags,
+  }
+  Snipe.global_items = {}
 end
 
-Snipe.config = {
+H.default_config = {
   ui = {
-    max_width = -1, -- -1 means dynamic width
+    max_height = -1, -- -1 means dynamic height
     -- Where to place the ui window
     -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
     position = "topleft",
@@ -21,6 +30,12 @@ Snipe.config = {
       -- title = "My Window Title",
       border = "single", -- use "rounded" for rounded border
     },
+
+    -- Preselect the currently open buffer
+    preselect_current = true,
+
+    -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
+    text_align = "left",
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
@@ -46,327 +61,41 @@ Snipe.config = {
     -- Remove "j" and "k" from your dictionary to navigate easier to delete
     -- NOTE: Make sure you don't use the character below on your dictionary
     close_buffer = "D",
+
+    -- Open buffer in vertical split
+    open_vsplit = "V",
+
+    -- Open buffer in split, based on `vim.opt.splitbelow`
+    open_split = "H",
+
+    -- Change tag manually
+    change_tag = "C",
   },
   -- The default sort used for the buffers
   -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
   sort = "default"
 }
 
---- Creates a snipe menu
----
---- A producer must return a tuple where the first component is
---- some user data (anything) associated with the second component
---- being the string value of the item to show
----
----@generic T
----@generic M
----@param producer fun(): table<T>, table<string> (function) Function
----@param callback fun(meta: T, index: integer) (function) Function
----@param menu_context ?M
----@return table { open = fun(), close = fun(), is_open = fun() } : Table of menu functions
-Snipe.menu = function(producer, callback, menu_context)
-  local window_unset = -1
-  local buffer = H.create_buffer()
-  local state = {
-    buffer = buffer,
-    window = window_unset,
-    bindings = {},
-    page_index = 1,
-  }
-
-  local function is_open()
-    return vim.api.nvim_win_is_valid(state.window) or not window_unset
-  end
-
-  local function close()
-    vim.api.nvim_buf_delete(state.buffer, { force = true })
-    state.window = window_unset
-  end
-
-  local function open()
-    if not vim.api.nvim_win_is_valid(state.window) then
-      if vim.api.nvim_buf_is_valid(state.buffer) then
-        -- Probably not likely to be possible but just in case don't wan't to leak a buffer
-        vim.api.nvim_buf_delete(state.buffer, { force = true })
-      end
-
-      -- Create fresh window and buffer
-      state.buffer = H.create_buffer()
-      state.window = window_unset
-      -- Set buffer options:
-      --   buftype=nofile, buffer is not related to a file, will not be written
-      vim.bo[state.buffer].buftype = "nofile"
-    end
-
-    local meta, items = producer()
-    local max_height = H.window_get_max_height() - 1
-
-    if #meta == 0 then
-      vim.notify("(snipe) No items", vim.log.levels.WARNING)
-      return
-    end
-
-    if #meta ~= #items then
-      vim.notify("(snipe) Meta-data length from producer does not match the number of items", vim.log.levels.ERROR)
-      return
-    end
-
-    local page_count = math.max(1, math.ceil(#items / max_height))
-
-    state.page_index = state.page_index > page_count
-      and page_count -- clamp
-      or state.page_index
-
-    local item_count = max_height
-    local last_page = state.page_index == page_count
-    if last_page then
-      item_count = #items % max_height
-    end
-
-    local off = (state.page_index - 1) * max_height + 1
-    local page_items = vim.list_slice(items, off, off + item_count)
-
-    vim.bo[state.buffer].modifiable = true
-
-    local annotated_page_items = H.annotate_with_tags(page_items)
-    local annotated_raw_page_items = vim.tbl_map(function (ent)
-      return table.concat(ent, " ")
-    end, annotated_page_items)
-
-    vim.api.nvim_buf_set_lines(state.buffer, 0, -1, false, annotated_raw_page_items)
-
-    if state.window == window_unset then
-      if Snipe.config.ui.max_width ~= -1 then
-        state.window = H.create_window(state.buffer, #page_items, Snipe.config.ui.max_width)
-      else
-        local max = 1
-        for i, s in ipairs(annotated_raw_page_items) do
-          max = #s > #annotated_raw_page_items[max] and i or max
-        end
-        state.window = H.create_window(state.buffer, #page_items, #annotated_raw_page_items[max])
-      end
-    end
-
-    vim.api.nvim_win_set_height(state.window, #page_items)
-    vim.api.nvim_set_current_win(state.window)
-    vim.api.nvim_win_set_hl_ns(state.window, H.highlight_ns)
-
-    vim.bo[state.buffer].modifiable = false
-    vim.wo[state.window].foldenable = false
-    vim.wo[state.window].wrap = false
-    vim.wo[state.window].cursorline = true
-
-    vim.api.nvim_exec_autocmds("User", {
-      pattern = "SnipeCreateBuffer",
-      data = {
-        menu = {
-          open = open,
-          close = close,
-          is_open = is_open,
-          menu_context = menu_context,
-        },
-        buf = state.buffer,
-      },
-    })
-
-    -- TODO investicate vim.fn.getcharstr() a bit more for this
-    local max_width = H.min_digits(#page_items, #H.hints.dictionary)
-
-    for i, pair in ipairs(annotated_page_items) do
-      vim.api.nvim_buf_add_highlight(state.buffer, H.highlight_ns, "SnipeHint", i - 1, 0, max_width)
-
-      vim.keymap.set("n", pair[1], function ()
-        close()
-        callback(meta[i], off + i - 1)
-      end, { nowait = true, buffer = state.buffer })
-    end
-
-    vim.keymap.set("n", Snipe.config.navigate.next_page, function()
-      state.page_index = math.min(state.page_index + 1, page_count)
-      close() -- close so keymaps get freed
-      open()
-    end, { nowait = true, buffer = state.buffer })
-
-    vim.keymap.set("n", Snipe.config.navigate.under_cursor, function()
-      local pos = vim.api.nvim_win_get_cursor(state.window)
-      close()
-      callback(meta[pos[1]], off + pos[1] - 1)
-    end, { nowait = true, buffer = state.buffer })
-
-
-    vim.keymap.set("n", Snipe.config.navigate.prev_page, function()
-      state.page_index = math.max(state.page_index - 1, 1)
-      close() -- close so keymaps get freed
-      open()
-    end, { nowait = true, buffer = state.buffer })
-
-    vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function()
-      close()
-    end, { nowait = true, buffer = state.buffer })
-
-    vim.keymap.set("n", Snipe.config.navigate.close_buffer, function()
-      local cursor_pos = vim.api.nvim_win_get_cursor(state.window)
-      local line_count = vim.api.nvim_buf_line_count(state.buffer)
-      local at_last_line = cursor_pos[1] == line_count
-      local line_before_closing = cursor_pos[1]
-      local bufnr = meta[line_before_closing]
-      close()
-      vim.api.nvim_buf_delete(bufnr, { force = true })
-      open()
-      local new_line_count = vim.api.nvim_buf_line_count(state.buffer)
-      if at_last_line then
-        vim.api.nvim_win_set_cursor(state.window, { new_line_count, 0 })
-      else
-        vim.api.nvim_win_set_cursor(state.window, { math.min(line_before_closing, new_line_count), 0 })
-      end
-    end, { nowait = true, buffer = state.buffer })
-  end
-
-  return {
-    open = open,
-    close = close,
-    is_open = is_open,
-  }
-end
-
---- Creates a toggle menu
----
---- Wraps the Snipe.menu such that this function closes
---- the menu when its open and opens the menu when its
---- closed
----
----@generic T
----@generic M
----@param producer fun(): table<T>, table<string> (function) Function
----@param callback fun(meta: T, index: integer) (function) Function
----@param menu_context ?M
-Snipe.create_menu_toggler = function(producer, callback, menu_context)
-  local menu = Snipe.menu(producer, callback, menu_context)
-  return function()
-    if menu.is_open() then
-      menu.close()
-    else
-      menu.open()
-    end
-  end
-end
-
----@deprecated Use `create_toggle_menu` instead
-Snipe.toggle_menu = Snipe.create_menu_toggler
-
-Snipe.create_buffer_menu_toggler = function(bopts_)
-  local bopts = bopts_ or {}
-  return Snipe.create_menu_toggler(function() return Snipe.buffer_producer(bopts) end, function(bufnr, _)
-    vim.api.nvim_set_current_buf(bufnr)
-  end)
-end
-
----@deprecated Use `create_toggle_buffer_menu` instead
-Snipe.toggle_buffer_menu = Snipe.create_buffer_menu_toggler
-
-Snipe.open_buffer_menu = function(bopts_)
-  Snipe.create_buffer_menu_toggler(bopts_)()
-end
-
--- Helper function used to explode a string at a certain separator
--- Used for the "last" sort option
-H.explode_string = function(str, sep)
-  local t = {}
-  for s in str:gmatch("([^"..sep.."]+)") do
-      table.insert(t, s)
-  end
-  return t
-end
-
--- Return the buffer name from its buffer number
-H.get_buffer_name = function(bufnr, opts)
-  local name = vim.fn.fnamemodify(vim.fn.bufname(bufnr), ":.")
-  if #name == 0 then
-    return "[No Name]"
-  end
-
-  local res = name:gsub(vim.env.HOME, "~", 1)
-
-  if opts.max_path_width ~= nil then
-    local rem = name
-    res = ""
-    for _ = 1, opts.max_path_width do
-      if vim.fs.dirname(rem) == rem then
-        break
-      end
-      if res ~= "" then
-        res = "/" .. res
-      end
-      if rem == vim.env.HOME then
-        res = "~" .. res
-      else
-        res = vim.fs.basename(rem) .. res
-      end
-      rem = vim.fs.dirname(rem)
-    end
-  end
-
-  return res
-end
-
---- Buffer producer lists open buffers
----
----@return table<integer>, table<string>
-Snipe.buffer_producer = function(opts_)
-  local opts = opts_ or {}
-
-  local bufnrs = {}
-  local bufnames = {}
-
-  if Snipe.config.sort == "default" then
-    -- Get the buffers number
-    bufnrs = vim.tbl_filter(function (b)
-      return vim.fn.buflisted(b) == 1
-    end, vim.api.nvim_list_bufs())
-
-    -- Get the buffers name
-    bufnames = vim.tbl_map(function (b)
-      return H.get_buffer_name(b, opts)
-    end, bufnrs)
-  elseif Snipe.config.sort == "last" then
-    local buffers = vim.api.nvim_exec2("ls t", { output = true })
-
-    --- @type string buf
-    for _, buf in ipairs(H.explode_string(buffers["output"], '\n')) do
-      local bufnr = tonumber(string.match(buf, '%d+'))
-
-      if vim.fn.buflisted(bufnr) then
-        table.insert(bufnrs, bufnr)
-        table.insert(bufnames, H.get_buffer_name(bufnr, opts))
-      end
-    end
-  end
-
-
-  return bufnrs, bufnames
-end
-
-H.hints = {
-  dictionary = {},
-  dictionary_index = {},
-}
-
-H.default_config = vim.deepcopy(Snipe.config)
-
 H.setup_config = function(config)
+  config = config or {}
   vim.validate({ config = { config, "table", true } })
-  config = vim.tbl_deep_extend("force", vim.deepcopy(H.default_config), config or {})
+  config = vim.tbl_deep_extend("force", vim.deepcopy(H.default_config), config)
 
   vim.validate({
     ["ui.max_width"] = { config.ui.max_width, "number", true },
     ["ui.position"] = { config.ui.position, "string", true },
     ["ui.open_win_override"] = { config.ui.open_win_override, "table", true },
+    ["ui.preselect_current"] = { config.ui.preselect_current, "boolean", true },
+    ["ui.text_align"] = { config.ui.text_align, "string", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
     ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
     ["navigate.cancel_snipe"] = { config.navigate.cancel_snipe, "string", true },
     ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
+    ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
+    ["navigate.open_split"] = { config.navigate.open_split, "string", true },
+    ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
     ["sort"] = { config.sort, "string", true },
   })
 
@@ -376,162 +105,124 @@ H.setup_config = function(config)
     return config
   end
 
-  -- This makes the function idempotent
-  H.hints.dictionary_index = {}
-  H.hints.dictionary = {}
-
-  for i = 1, #config.hints.dictionary do
-    local c = config.hints.dictionary:sub(i, i)
-    if H.hints.dictionary_index[c] ~= nil then -- duplicate
-      vim.notify("(snipe) Dictionary must have unique items: ignoring duplicates", vim.log.levels.WARNING)
-    else
-      table.insert(H.hints.dictionary, c)
-      H.hints.dictionary_index[c] = i
-    end
-  end
-
   return config
 end
 
-H.apply_config = function(config) Snipe.config = config end
+Snipe.index_to_tag = {}
 
-H.annotate_with_tags = function(items)
-  local tags = H.generate_tags(#items)
-  local i = 0
-
-  return vim.tbl_map(function (ent)
-    i = i + 1
-    return {tags[i], ent}
-  end, items)
-end
-
-H.min_digits = function(n, base)
-  return math.max(1, math.ceil(math.log(n, base)))
-end
-
--- Generating tags is essentially a generalized
--- form of counting where our unique digits is the
--- dictionary of characters with base = #characters
-H.generate_tags = function(n)
-  local max = H.hints.dictionary[#H.hints.dictionary]
-
-  local function inc_digit(digit)
-    return H.hints.dictionary[(H.hints.dictionary_index[digit] + 1) % (#H.hints.dictionary + 1)]
+function Snipe.default_map_tags(tags)
+  for _, index_and_tag in ipairs(Snipe.index_to_tag) do
+    tags[index_and_tag.index] = index_and_tag.tag
   end
-
-  local function inc(num)
-    local last = num[#num]
-    if last == max then
-      -- "carry the one"
-      local i = #num - 1
-      while i >= 1 and num[i] == max do
-        i = i - 1
-      end
-
-      if i == 0 then -- increase number of digits
-        table.insert(num, H.hints.dictionary[1])
-        i = 1
-        num[i] = H.hints.dictionary[1]
-      end
-
-      -- i is what we need to increment and zero everything after it
-      num[i] = inc_digit(num[i])
-      for s = i + 1, #num do
-        num[s] = H.hints.dictionary[1]
-      end
-
-      return num
-    end
-
-    num[#num] = inc_digit(last)
-    return num
-  end
-
-  -- This is so we can add trailing "0": where "0" is just first item in dictionary
-  local max_width = H.min_digits(n, #H.hints.dictionary)
-
-  local tags = {}
-  local tag = {H.hints.dictionary[1]}
-  for _ = 1, n do
-    local lead = string.rep(H.hints.dictionary[1], max_width - #tag)
-    table.insert(tags, lead .. table.concat(tag))
-    tag = inc(tag)
-  end
-
   return tags
 end
 
-H.create_buffer = function()
-  local bufnr = vim.api.nvim_create_buf(false, false)
-  vim.bo[bufnr].filetype = "snipe-menu"
-  return bufnr
-end
-
-H.create_window = function(bufnr, height, width)
-  local row, col = 0, 0
-  local anchor = "NW"
-  local pos = Snipe.config.ui.position
-
-  local max_height = H.window_get_max_height()
-  local max_width = vim.fn.winwidth(0)
-
-  if pos == "topleft" then
-    row, col = 0, 0
-    anchor = "NW"
-  elseif pos == "topright" then
-    row, col = 0, max_width
-    anchor = "NE"
-  elseif pos == "bottomleft" then
-    row, col = max_height + 2, 0
-    anchor = "SW"
-  elseif pos == "bottomright" then
-    row, col = max_height + 2, max_width
-    anchor = "SE"
-  elseif pos == "center" then
-    row, col = math.floor((max_height + 2) / 2) - math.floor((height + 2) / 2),
-               math.floor(max_width / 2) - math.floor((width + 2) / 2)
-  elseif pos == "cursor" then
-    -- Taken from telescope source
-    local winbar = (function()
-      if vim.fn.exists "&winbar" == 1 then
-        return vim.wo.winbar == "" and 0 or 1
-      end
-      return 0
-    end)()
-    local position = vim.api.nvim_win_get_position(0)
-    row, col = vim.fn.winline() + position[1] + winbar, vim.fn.wincol() + position[2]
-    anchor = "NW"
-  else
-    vim.notify("(snipe) unrecognized position", vim.log.levels.WARN)
+function Snipe.default_keymaps(m)
+  local nav_next = function()
+    m:goto_next_page()
+    m:reopen()
   end
 
-  local window_opts = vim.tbl_extend("keep", Snipe.config.ui.open_win_override, {
-    title = "Snipe",
-    anchor = anchor,
-    border = "single",
-    style = "minimal",
-    relative = "editor",
-    row = row,
-    col = col,
-    width = width,
-    height = height,
-    zindex = 99,
-  })
+  local nav_prev = function()
+    m:goto_prev_page()
+    m:reopen()
+  end
 
-  return vim.api.nvim_open_win(bufnr, false, window_opts)
+  vim.keymap.set("n", Snipe.config.navigate.next_page, nav_next, { nowait = true, buffer = m.buf })
+  vim.keymap.set("n", Snipe.config.navigate.prev_page, nav_prev, { nowait = true, buffer = m.buf })
+  vim.keymap.set("n", Snipe.config.navigate.close_buffer, function()
+    local hovered = m:hovered()
+    local bufnr = m.items[hovered].id
+    -- I have to hack switch back to main window, otherwise currently background focused
+    -- window cannot be deleted when focused on a floating window
+    local current_tabpage = vim.api.nvim_get_current_tabpage()
+    local root_win = vim.api.nvim_tabpage_list_wins(current_tabpage)[1]
+    vim.api.nvim_set_current_win(root_win)
+    vim.api.nvim_buf_delete(bufnr, { force = true })
+    vim.api.nvim_set_current_win(m.win)
+    table.remove(m.items, hovered)
+    m:reopen()
+  end, { nowait = true, buffer = m.buf })
+
+  vim.keymap.set("n", Snipe.config.navigate.open_vsplit, function()
+    local bufnr = m.items[m:hovered()].id
+    m:close() -- make sure to call first !
+    vim.api.nvim_open_win(bufnr, true, { vertical = true, win = 0 })
+  end, { nowait = true, buffer = m.buf })
+
+  vim.keymap.set("n", Snipe.config.navigate.open_split, function()
+    local split_direction = vim.opt.splitbelow:get() and "below" or "above"
+    local bufnr = m.items[m:hovered()].id
+    m:close() -- make sure to call first !
+    vim.api.nvim_open_win(bufnr, true, { split = split_direction, win = 0 })
+  end, { nowait = true, buffer = m.buf })
+
+  vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function() m:close() end, { nowait = true, buffer = m.buf })
+  vim.keymap.set("n", Snipe.config.navigate.under_cursor, function()
+    local hovered = m:hovered()
+    m:close()
+    vim.api.nvim_set_current_buf(m.items[hovered].id)
+  end, { nowait = true, buffer = m.buf })
+
+  vim.keymap.set("n", Snipe.config.navigate.change_tag, function()
+    local item_id = m:hovered()
+    vim.ui.input({ prompt = "Enter custom tag: " }, function (input)
+      table.insert(Snipe.index_to_tag, { index = item_id, tag = input })
+      m:reopen()
+    end)
+  end, { nowait = true, buffer = m.buf })
 end
 
-H.create_default_hl = function()
-  H.highlight_ns = vim.api.nvim_create_namespace("")
-  vim.api.nvim_set_hl(H.highlight_ns, "SnipeHint", { link = "CursorLineNr" })
+function Snipe.default_fmt(item)
+  return item.name
 end
 
--- From https://github.com/echasnovski/mini.nvim
-H.window_get_max_height = function()
-  local has_tabline = vim.o.showtabline == 2 or (vim.o.showtabline == 1 and #vim.api.nvim_list_tabpages() > 1)
-  local has_statusline = vim.o.laststatus > 0
-  -- Remove 2 from maximum height to account for top and bottom borders
-  return vim.o.lines - vim.o.cmdheight - (has_tabline and 1 or 0) - (has_statusline and 1 or 0) - 2
+function Snipe.default_select(m, i)
+  Snipe.global_menu:close()
+  vim.api.nvim_set_current_buf(m.items[i].id)
+end
+
+function Snipe.open_buffer_menu()
+  local cmd = Snipe.config.sort == "last" and "ls t" or "ls"
+  Snipe.global_items = require("snipe.buffer").get_buffers(cmd)
+  Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
+
+  if Snipe.config.ui.preselect_current then
+    local opened = false
+    for i, b in ipairs(Snipe.global_items) do
+      if b.classifiers:sub(2,2) == "%" then
+        Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt, i)
+        opened = true
+      end
+    end
+    if not opened then
+      Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt)
+    end
+  else
+    Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt)
+  end
+end
+
+Snipe.ui_select_menu = nil
+
+-- Can be set as your `vim.ui.select`
+---@param items any[] Arbitrary items
+---@param opts table Additional options
+---@param on_choice fun(item: any|nil, idx: integer|nil)
+function Snipe.ui_select(items, opts, on_choice)
+  if Snipe.ui_select_menu == nil then
+    vim.notify("Must instanciate `require('snipe').ui_select_menu' before using `ui_select'", vim.log.levels.ERROR)
+    return
+  end
+
+  if opts.prompt ~= nil then
+    Snipe.ui_select_menu.config.open_win_override.title = opts.prompt
+  end
+  Snipe.ui_select_menu:open(items, function(m, i)
+    on_choice(m.items[i], i)
+    m:close()
+  end, opts.format_item)
+  Snipe.ui_select_menu.config.open_win_override.title = Snipe.config.ui.open_win_override.title
 end
 
 return Snipe
