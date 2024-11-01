@@ -5,7 +5,14 @@ Snipe.setup = function(config)
   Snipe.config = H.setup_config(config)
 
   local SnipeMenu = require("snipe.menu")
-  Snipe.global_menu = SnipeMenu:new { dictionary = Snipe.config.hints.dictionary, position = Snipe.config.ui.position, open_win_override = Snipe.config.ui.open_win_override, max_height = Snipe.config.ui.max_height, align = Snipe.config.ui.text_align }
+  Snipe.global_menu = SnipeMenu:new {
+    dictionary = Snipe.config.hints.dictionary,
+    position = Snipe.config.ui.position,
+    open_win_override = Snipe.config.ui.open_win_override,
+    max_height = Snipe.config.ui.max_height,
+    align = Snipe.config.ui.text_align,
+    map_tags = Snipe.default_map_tags,
+  }
   Snipe.global_items = {}
 end
 
@@ -60,6 +67,9 @@ H.default_config = {
 
     -- Open buffer in split, based on `vim.opt.splitbelow`
     open_split = "H",
+
+    -- Change tag manually
+    change_tag = "C",
   },
   -- The default sort used for the buffers
   -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
@@ -85,6 +95,7 @@ H.setup_config = function(config)
     ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },
+    ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
     ["sort"] = { config.sort, "string", true },
   })
 
@@ -95,6 +106,15 @@ H.setup_config = function(config)
   end
 
   return config
+end
+
+Snipe.index_to_tag = {}
+
+function Snipe.default_map_tags(tags)
+  for _, index_and_tag in ipairs(Snipe.index_to_tag) do
+    tags[index_and_tag.index] = index_and_tag.tag
+  end
+  return tags
 end
 
 function Snipe.default_keymaps(m)
@@ -142,6 +162,14 @@ function Snipe.default_keymaps(m)
     local hovered = m:hovered()
     m:close()
     vim.api.nvim_set_current_buf(m.items[hovered].id)
+  end, { nowait = true, buffer = m.buf })
+
+  vim.keymap.set("n", Snipe.config.navigate.change_tag, function()
+    local item_id = m:hovered()
+    vim.ui.input({ prompt = "Enter custom tag: " }, function (input)
+      table.insert(Snipe.index_to_tag, { index = item_id, tag = input })
+      m:reopen()
+    end)
   end, { nowait = true, buffer = m.buf })
 end
 

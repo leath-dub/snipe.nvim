@@ -34,6 +34,7 @@ H.default_config = {
   -- unset means no maximum
   max_height = unset,
   align = "left", -- could also be "left"
+  map_tags = nil, -- Apply map operation on generated tags
 }
 
 --- @param config ?table
@@ -72,6 +73,9 @@ function Menu:open(items, tag_followed, fmt, preselect)
 
   self.display_items = Slice:new(items, first_item_index, num_items)
   local tags = H.generate_tags(num_items, self.dict, self.dict_index)
+  if self.config.map_tags ~= nil then
+    tags = self.config.map_tags(tags)
+  end
 
   -- The actual list of strings that are displayed
   local widest_line_width = 0

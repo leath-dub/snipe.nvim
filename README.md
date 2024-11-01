@@ -103,6 +103,9 @@ Snipe.config = {
 
     -- Open buffer in split, based on `vim.opt.splitbelow`
     open_split = "H",
+
+    -- Change tag manually
+    change_tag = "C",
   },
   -- The default sort used for the buffers
   -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
