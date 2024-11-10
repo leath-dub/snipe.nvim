@@ -183,9 +183,6 @@ function Snipe.file_first_format(buffers)
     local e = item.name
     local basename = vim.fs.basename(e)
     local dirname = vim.fs.dirname(e)
-    if dirname == "." then
-      return basename
-    end
     buffers[i].meta = { prefix = basename, dir = dirname }
   end
 
@@ -199,7 +196,11 @@ function Snipe.file_first_format(buffers)
   for i, e in ipairs(buffers) do
     local padding_len = max - #e.meta.prefix
     local padding = string.rep(" ", padding_len)
-    buffers[i].pre_formatted = string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
+    if e.meta.dir ~= nil then
+      buffers[i].pre_formatted = string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
+    else
+      buffers[i].pre_formatted = string.format("%s", e.meta.prefix)
+    end
   end
 
   return buffers
