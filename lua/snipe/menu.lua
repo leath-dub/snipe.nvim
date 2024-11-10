@@ -205,7 +205,6 @@ function Menu:get_window_opts(height, width)
   local pos = self.config.position
 
   local max_height = H.window_get_max_height()
-
   local max_width = vim.o.columns
 
   if pos == "topleft" then
@@ -255,7 +254,15 @@ end
 function Menu:update_window(height, width)
   local cursor_pos = vim.api.nvim_win_get_cursor(self.win)
 
-  vim.api.nvim_win_set_config(self.win, self:get_window_opts(height, width))
+  local opts = self:get_window_opts(height, width)
+  if self.config.position == "cursor" then
+    -- Maintain initial window open position
+    -- See issue #40
+    local pos = vim.api.nvim_win_get_position(self.win)
+    opts.row = pos[1]
+    opts.col = pos[2]
+  end
+  vim.api.nvim_win_set_config(self.win, opts)
 
   -- clamp the old cursor position to the new window
   cursor_pos[1] = H.clamp(cursor_pos[1], 1, height)
