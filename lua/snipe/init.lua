@@ -35,7 +35,8 @@ H.default_config = {
     preselect_current = true,
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
-    -- "left", "right", "file-first"
+    -- Can be "left", "right" or "file-first"
+    -- NOTE: "file-first" buts the file name first and then the directory name
     text_align = "left",
   },
   hints = {
