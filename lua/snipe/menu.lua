@@ -33,7 +33,7 @@ H.default_config = {
 
   -- unset means no maximum
   max_height = unset,
-  align = "left", -- could also be "left"
+  align = "left", -- one of "right" and "left"
   map_tags = nil, -- Apply map operation on generated tags
 }
 
@@ -134,7 +134,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
 
   -- Remove old tags from the buffer
   for _, old_tag in ipairs(self.old_tags) do
-    vim.api.nvim_buf_del_keymap(self.buf, "n", old_tag)
+    pcall(vim.api.nvim_buf_del_keymap, self.buf, "n", old_tag)
   end
 
   -- Clear old highlights

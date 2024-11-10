@@ -10,7 +10,7 @@ Snipe.setup = function(config)
     position = Snipe.config.ui.position,
     open_win_override = Snipe.config.ui.open_win_override,
     max_height = Snipe.config.ui.max_height,
-    align = Snipe.config.ui.text_align,
+    align = Snipe.config.ui.text_align == "file-first" and "left" or Snipe.config.ui.text_align,
     map_tags = Snipe.default_map_tags,
   }
   Snipe.global_items = {}
@@ -35,6 +35,7 @@ H.default_config = {
     preselect_current = true,
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
+    -- "left", "right", "file-first"
     text_align = "left",
   },
   hints = {
@@ -173,7 +174,40 @@ function Snipe.default_keymaps(m)
   end, { nowait = true, buffer = m.buf })
 end
 
+Snipe.directory_separator = "@"
+
+-- Function is used when "file-first" is set as `ui.text_align`
+function Snipe.file_first_format(buffers)
+  for i, item in ipairs(buffers) do
+    local e = item.name
+    local basename = vim.fs.basename(e)
+    local dirname = vim.fs.dirname(e)
+    if dirname == "." then
+      return basename
+    end
+    buffers[i].meta = { prefix = basename, dir = dirname }
+  end
+
+  local max = 0
+  for _, e in ipairs(buffers) do
+    if #e.meta.prefix > max then
+      max = #e.meta.prefix
+    end
+  end
+
+  for i, e in ipairs(buffers) do
+    local padding_len = max - #e.meta.prefix
+    local padding = string.rep(" ", padding_len)
+    buffers[i].pre_formatted = string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
+  end
+
+  return buffers
+end
+
 function Snipe.default_fmt(item)
+  if item.pre_formatted ~= nil then
+    return item.pre_formatted
+  end
   return item.name
 end
 
@@ -185,6 +219,9 @@ end
 function Snipe.open_buffer_menu()
   local cmd = Snipe.config.sort == "last" and "ls t" or "ls"
   Snipe.global_items = require("snipe.buffer").get_buffers(cmd)
+  if Snipe.config.ui.text_align == "file-first" then
+    Snipe.global_items = Snipe.file_first_format(Snipe.global_items)
+  end
   Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
 
   if Snipe.config.ui.preselect_current then
