@@ -273,7 +273,7 @@ function Menu:update_window(height, width)
   vim.api.nvim_win_set_hl_ns(self.win, H.highlight_ns)
   vim.wo[self.win].foldenable = false
   vim.wo[self.win].wrap = false
-  vim.wo[self.win].cursorline = true
+  -- vim.wo[self.win].cursorline = true
 end
 
 function Menu:create_window(bufnr, height, width)
@@ -282,7 +282,7 @@ function Menu:create_window(bufnr, height, width)
   vim.api.nvim_win_set_hl_ns(win, H.highlight_ns)
   vim.wo[win].foldenable = false
   vim.wo[win].wrap = false
-  vim.wo[win].cursorline = true
+  -- vim.wo[win].cursorline = true
 
   return win
 end
