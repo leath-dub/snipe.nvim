@@ -12,6 +12,7 @@ Snipe.setup = function(config)
     max_height = Snipe.config.ui.max_height,
     align = Snipe.config.ui.text_align == "file-first" and "left" or Snipe.config.ui.text_align,
     map_tags = Snipe.default_map_tags,
+    set_window_local_options = Snipe.set_window_local_options,
   }
   Snipe.global_items = {}
 end
@@ -108,6 +109,12 @@ H.setup_config = function(config)
   end
 
   return config
+end
+
+function Snipe.set_window_local_options(wid)
+  vim.wo[wid].foldenable = false
+  vim.wo[wid].wrap = false
+  vim.wo[wid].cursorline = true
 end
 
 Snipe.index_to_tag = {}
