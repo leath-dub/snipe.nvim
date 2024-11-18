@@ -115,7 +115,13 @@ Snipe.config = {
 }
 ```
 
-## `vim.ui.select` wrapper
+## More Details
+
+### Projects using `snipe.nvim`
+
+* [snipe-lsp](https://github.com/kungfusheep/snipe-lsp.nvim) - navigate LSP symbols using a snipe menu
+
+### Use `snipe` as a `vim.ui.select` wrapper
 
 Snipe nvim can act as your `vim.ui.select` menu, which is what is used for "code actions" in LSP
 among other things. You can set this up like so:
@@ -133,7 +139,7 @@ vim.ui.select = snipe.ui_select;
 
 This makes `vim.ui.select` menus open in the center, with `<esc>` to cancel.
 
-## Development
+### Development
 
 The older API, as I am sure contributors are aware, was shite! The new API is
 based on creating a `Menu` which is just a state object mostly just maintaining
@@ -192,7 +198,9 @@ vim.keymap.set("n", "gb", function()
 end)
 ```
 
-### Example ( File browser )
+### Examples
+
+#### File browser
 
 ```lua
 local uv = vim.uv or vim.loop
@@ -336,7 +344,7 @@ end
 vim.keymap.set("n", "cd", open_file_manager)
 ```
 
-### Example (Modal Buffer menu)
+#### Modal Buffer menu
 
 The following code has a single menu that has different actions on the selected
 item depending on what keybind you open it with (`<leader>o` or `<leader>d`):
