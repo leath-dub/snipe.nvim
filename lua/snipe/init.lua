@@ -144,9 +144,8 @@ function Snipe.default_keymaps(m)
     local bufnr = m.items[hovered].id
     -- I have to hack switch back to main window, otherwise currently background focused
     -- window cannot be deleted when focused on a floating window
-    local current_tabpage = vim.api.nvim_get_current_tabpage()
-    local root_win = vim.api.nvim_tabpage_list_wins(current_tabpage)[1]
-    vim.api.nvim_set_current_win(root_win)
+    m.opened_from_wid = m:open_over()
+    vim.api.nvim_set_current_win(m.opened_from_wid)
     vim.api.nvim_buf_delete(bufnr, { force = true })
     vim.api.nvim_set_current_win(m.win)
     table.remove(m.items, hovered)
@@ -222,6 +221,8 @@ end
 
 function Snipe.default_select(m, i)
   Snipe.global_menu:close()
+  m.opened_from_wid = m:open_over()
+  vim.api.nvim_set_current_win(m.opened_from_wid)
   vim.api.nvim_set_current_buf(m.items[i].id)
 end
 

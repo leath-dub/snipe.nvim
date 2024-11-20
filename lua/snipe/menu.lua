@@ -9,6 +9,7 @@ local Menu = {
   buf = unset,
   win = unset,
   page = 1,
+  opened_from_wid = -1, -- the window that the window was opened in
 
   tag_followed = nil, -- callback
   fmt = nil, -- callback
@@ -58,6 +59,9 @@ end
 ---@param fmt ?fun(item: T): (string) takes each item and transforms it before printing
 ---@param preselect ?number item to preselect
 function Menu:open(items, tag_followed, fmt, preselect)
+  -- Keep original open root window unless it gets deleted (becomes invalid)
+  self.opened_from_wid = self:open_over()
+
   self.items = items
   self.tag_followed = tag_followed
   self.fmt = fmt
@@ -153,6 +157,13 @@ function Menu:open(items, tag_followed, fmt, preselect)
     end, { nowait = true, buffer = self.buf })
   end
   self.old_tags = tags
+end
+
+function Menu:open_over()
+  if not vim.api.nvim_win_is_valid(self.opened_from_wid) then
+    return vim.fn.win_getid()
+  end
+  return self.opened_from_wid
 end
 
 function Menu:ensure_buffer()
