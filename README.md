@@ -119,7 +119,12 @@ Snipe.config = {
 
 ### Projects using `snipe.nvim`
 
-* [snipe-lsp](https://github.com/kungfusheep/snipe-lsp.nvim) - navigate LSP symbols using a snipe menu
+* [snipe-lsp](https://github.com/kungfusheep/snipe-lsp.nvim) - navigate LSP
+symbols using a snipe menu
+* [snipe-spell](https://github.com/kungfusheep/snipe-spell.nvim) - use snipe as
+ui menu to builtin vim spell checking
+* [snipe-marks](https://github.com/nicholasxjy/snipe-marks.nvim) - navigate
+marks using snipe
 
 ### Use `snipe` as a `vim.ui.select` wrapper
 
