@@ -52,7 +52,7 @@ vim.keymap.set("n", "gb", snipe.open_buffer_menu)
 You can pass in a table of options to the `setup` function, here are the default options:
 
 ```lua
-Snipe.config = {
+{
   ui = {
     max_height = -1, -- -1 means dynamic height
     -- Where to place the ui window
@@ -69,6 +69,11 @@ Snipe.config = {
 
     -- Preselect the currently open buffer
     preselect_current = true,
+
+    -- Set a function to preselect the currently open buffer
+    -- E.g, `preselect = require("snipe").preselect_by_classifier("#")` to
+    -- preselect alternate buffer (see :h ls and look at the "Indicators")
+    preselect = nil, -- function (bs: Buffer[] [see lua/snipe/buffer.lua]) -> int (index)
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
     -- Can be "left", "right" or "file-first"

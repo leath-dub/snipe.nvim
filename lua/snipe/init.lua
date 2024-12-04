@@ -35,6 +35,11 @@ H.default_config = {
     -- Preselect the currently open buffer
     preselect_current = true,
 
+    -- Set a function to preselect the currently open buffer
+    -- E.g, `preselect = require("snipe").preselect_by_classifier("#")` to
+    -- preselect alternate buffer (see :h ls and look at the "Indicators")
+    preselect = nil, -- function (bs: Buffer[] [see lua/snipe/buffer.lua]) -> int (index)
+
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
     -- Can be "left", "right" or "file-first"
     -- NOTE: "file-first" buts the file name first and then the directory name
@@ -84,11 +89,12 @@ H.setup_config = function(config)
   vim.validate({ config = { config, "table", true } })
   config = vim.tbl_deep_extend("force", vim.deepcopy(H.default_config), config)
 
-  vim.validate({
+  local validation_set = {
     ["ui.max_width"] = { config.ui.max_width, "number", true },
     ["ui.position"] = { config.ui.position, "string", true },
     ["ui.open_win_override"] = { config.ui.open_win_override, "table", true },
     ["ui.preselect_current"] = { config.ui.preselect_current, "boolean", true },
+    ["ui.preselect"] = { config.ui.preselect, "function", true },
     ["ui.text_align"] = { config.ui.text_align, "string", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
@@ -100,7 +106,16 @@ H.setup_config = function(config)
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },
     ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
     ["sort"] = { config.sort, "string", true },
-  })
+  }
+
+  for field, validator in pairs(validation_set) do
+    vim.validate(field, unpack(validator))
+  end
+
+  -- Make sure they are not using preselect_current and preselect
+  if config.ui.preselect == nil and config.ui.preselect_current ~= false then
+    vim.notify("(snipe) Conflicting options: ui.preselect_current is set to false while ui.preselect is not nil")
+  end
 
   -- Validate hint characters and setup tables
   if #config.hints.dictionary < 2 then
@@ -226,6 +241,20 @@ function Snipe.default_select(m, i)
   vim.api.nvim_set_current_buf(m.items[i].id)
 end
 
+function Snipe.preselect_by_classifier(classifier)
+  return function (bs)
+    for i, b in ipairs(bs) do
+      -- Check if the classifier is anywhere in the classifier string
+      for j = 1, #b.classifiers do
+        if b.classifiers:sub(j, j) == classifier then
+          return i
+        end
+      end
+    end
+    return 1 -- default select the first item if classifier not found
+  end
+end
+
 function Snipe.open_buffer_menu()
   local cmd = Snipe.config.sort == "last" and "ls t" or "ls"
   Snipe.global_items = require("snipe.buffer").get_buffers(cmd)
@@ -234,7 +263,10 @@ function Snipe.open_buffer_menu()
   end
   Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
 
-  if Snipe.config.ui.preselect_current then
+  if Snipe.config.ui.preselect then
+    local i = Snipe.config.ui.preselect(Snipe.global_items)
+    Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt, i)
+  elseif Snipe.config.ui.preselect_current then
     local opened = false
     for i, b in ipairs(Snipe.global_items) do
       if b.classifiers:sub(2,2) == "%" then
