@@ -108,9 +108,7 @@ H.setup_config = function(config)
     ["sort"] = { config.sort, "string", true },
   }
 
-  for field, validator in pairs(validation_set) do
-    vim.validate(field, unpack(validator))
-  end
+  vim.validate(validation_set)
 
   -- Make sure they are not using preselect_current and preselect
   if config.ui.preselect == nil and config.ui.preselect_current ~= false then
