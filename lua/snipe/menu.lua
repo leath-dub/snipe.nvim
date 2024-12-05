@@ -159,10 +159,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
 end
 
 function Menu:open_over()
-  if not vim.api.nvim_win_is_valid(self.opened_from_wid) then
-    return vim.fn.win_getid()
-  end
-  return self.opened_from_wid
+  return vim.fn.win_getid()
 end
 
 function Menu:ensure_buffer()
