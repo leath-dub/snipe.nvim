@@ -33,7 +33,7 @@ H.default_config = {
     },
 
     -- Preselect the currently open buffer
-    preselect_current = true,
+    preselect_current = false,
 
     -- Set a function to preselect the currently open buffer
     -- E.g, `preselect = require("snipe").preselect_by_classifier("#")` to
