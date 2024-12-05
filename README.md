@@ -68,7 +68,7 @@ You can pass in a table of options to the `setup` function, here are the default
     },
 
     -- Preselect the currently open buffer
-    preselect_current = true,
+    preselect_current = false,
 
     -- Set a function to preselect the currently open buffer
     -- E.g, `preselect = require("snipe").preselect_by_classifier("#")` to
