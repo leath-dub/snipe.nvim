@@ -36,7 +36,7 @@ H.default_config = {
   max_height = unset,
   align = "left", -- one of "right" and "left"
   map_tags = nil, -- Apply map operation on generated tags
-  set_window_local_options = function (wid)
+  set_window_local_options = function(wid)
     vim.wo[wid].foldenable = false
     vim.wo[wid].wrap = false
     vim.wo[wid].cursorline = true
@@ -120,7 +120,6 @@ function Menu:open(items, tag_followed, fmt, preselect)
     widest_line_width = math.max(widest_line_width, #self.config.open_win_override.title)
   end
 
-
   -- Maintain buffer and window
   self:ensure_buffer()
   if self.win ~= unset and vim.api.nvim_win_is_valid(self.win) then
@@ -136,7 +135,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
   vim.api.nvim_set_current_win(self.win)
 
   if preselect ~= nil and preselect <= num_items then
-    vim.api.nvim_win_set_cursor(self.win, {preselect, 0})
+    vim.api.nvim_win_set_cursor(self.win, { preselect, 0 })
   end
 
   local tag_width = H.min_digits(#display_lines, #self.config.dictionary)
@@ -152,7 +151,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
   -- Set the highlights and keymaps for tags
   for i, tag in ipairs(tags) do
     vim.api.nvim_buf_add_highlight(self.buf, H.highlight_ns, "SnipeHint", i - 1, 0, tag_width)
-    vim.keymap.set("n", tag, function ()
+    vim.keymap.set("n", tag, function()
       tag_followed(self, self.display_items.offset + i - 1)
     end, { nowait = true, buffer = self.buf })
   end
@@ -236,12 +235,13 @@ function Menu:get_window_opts(height, width)
     row, col = max_height + 2, max_width
     anchor = "SE"
   elseif pos == "center" then
-    row, col = math.floor((max_height + 2) / 2) - math.floor((height + 2) / 2),
-               math.floor(max_width / 2) - math.floor((width + 2) / 2)
+    row, col =
+      math.floor((max_height + 2) / 2) - math.floor((height + 2) / 2),
+      math.floor(max_width / 2) - math.floor((width + 2) / 2)
   elseif pos == "cursor" then
     -- Taken from telescope source
     local winbar = (function()
-      if vim.fn.exists "&winbar" == 1 then
+      if vim.fn.exists("&winbar") == 1 then
         return vim.wo.winbar == "" and 0 or 1
       end
       return 0
@@ -284,7 +284,7 @@ function Menu:update_window(height, width)
   cursor_pos[1] = H.clamp(cursor_pos[1], 1, height)
   cursor_pos[2] = H.clamp(cursor_pos[2], 0, width)
 
-  vim.api.nvim_win_set_cursor(self.win, {1, 0}) -- make sure first line is shown
+  vim.api.nvim_win_set_cursor(self.win, { 1, 0 }) -- make sure first line is shown
   vim.api.nvim_win_set_cursor(self.win, cursor_pos)
   vim.api.nvim_win_set_hl_ns(self.win, H.highlight_ns)
   self.config.set_window_local_options(self.win)
@@ -399,7 +399,7 @@ H.generate_tags = function(n, dict, dict_index)
   local max_width = H.min_digits(n, #dict)
 
   local tags = {}
-  local tag = {dict[1]}
+  local tag = { dict[1] }
   for _ = 1, n do
     local lead = string.rep(dict[1], max_width - #tag)
     table.insert(tags, lead .. table.concat(tag))

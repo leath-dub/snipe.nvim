@@ -5,7 +5,7 @@ Snipe.setup = function(config)
   Snipe.config = H.setup_config(config)
 
   local SnipeMenu = require("snipe.menu")
-  Snipe.global_menu = SnipeMenu:new {
+  Snipe.global_menu = SnipeMenu:new({
     dictionary = Snipe.config.hints.dictionary,
     position = Snipe.config.ui.position,
     open_win_override = Snipe.config.ui.open_win_override,
@@ -13,7 +13,7 @@ Snipe.setup = function(config)
     align = Snipe.config.ui.text_align == "file-first" and "left" or Snipe.config.ui.text_align,
     map_tags = Snipe.default_map_tags,
     set_window_local_options = Snipe.set_window_local_options,
-  }
+  })
   Snipe.global_items = {}
 end
 
@@ -81,7 +81,7 @@ H.default_config = {
   },
   -- The default sort used for the buffers
   -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
-  sort = "default"
+  sort = "default",
 }
 
 H.setup_config = function(config)
@@ -178,7 +178,9 @@ function Snipe.default_keymaps(m)
     vim.api.nvim_open_win(bufnr, true, { split = split_direction, win = 0 })
   end, { nowait = true, buffer = m.buf })
 
-  vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function() m:close() end, { nowait = true, buffer = m.buf })
+  vim.keymap.set("n", Snipe.config.navigate.cancel_snipe, function()
+    m:close()
+  end, { nowait = true, buffer = m.buf })
   vim.keymap.set("n", Snipe.config.navigate.under_cursor, function()
     local hovered = m:hovered()
     m:close()
@@ -187,7 +189,7 @@ function Snipe.default_keymaps(m)
 
   vim.keymap.set("n", Snipe.config.navigate.change_tag, function()
     local item_id = m:hovered()
-    vim.ui.input({ prompt = "Enter custom tag: " }, function (input)
+    vim.ui.input({ prompt = "Enter custom tag: " }, function(input)
       table.insert(Snipe.index_to_tag, { index = item_id, tag = input })
       m:reopen()
     end)
@@ -216,7 +218,8 @@ function Snipe.file_first_format(buffers)
     local padding_len = max - #e.meta.prefix
     local padding = string.rep(" ", padding_len)
     if e.meta.dir ~= nil then
-      buffers[i].pre_formatted = string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
+      buffers[i].pre_formatted =
+        string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
     else
       buffers[i].pre_formatted = string.format("%s", e.meta.prefix)
     end
@@ -240,7 +243,7 @@ function Snipe.default_select(m, i)
 end
 
 function Snipe.preselect_by_classifier(classifier)
-  return function (bs)
+  return function(bs)
     for i, b in ipairs(bs) do
       -- Check if the classifier is anywhere in the classifier string
       for j = 1, #b.classifiers do
@@ -267,7 +270,7 @@ function Snipe.open_buffer_menu()
   elseif Snipe.config.ui.preselect_current then
     local opened = false
     for i, b in ipairs(Snipe.global_items) do
-      if b.classifiers:sub(2,2) == "%" then
+      if b.classifiers:sub(2, 2) == "%" then
         Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt, i)
         opened = true
       end

@@ -14,7 +14,7 @@ M.Buffer = Buffer
 function Buffer:from_line(s)
   local o = setmetatable({}, Buffer)
 
-  o.id = tonumber(vim.split(s, " ", {trimempty = true})[1])
+  o.id = tonumber(vim.split(s, " ", { trimempty = true })[1])
   o.classifiers = s:sub(4, 8)
 
   local ss = s:find('"')
@@ -29,7 +29,9 @@ function M.get_buffers(cmd)
   cmd = cmd or "ls"
   local bufs_out = vim.api.nvim_exec2(cmd, { output = true }).output
   local bufs = vim.split(bufs_out, "\n", { trimempty = true })
-  return vim.tbl_map(function (l) return Buffer:from_line(l) end, bufs)
+  return vim.tbl_map(function(l)
+    return Buffer:from_line(l)
+  end, bufs)
 end
 
 return M
