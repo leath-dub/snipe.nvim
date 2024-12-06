@@ -111,8 +111,8 @@ H.setup_config = function(config)
   vim.validate(validation_set)
 
   -- Make sure they are not using preselect_current and preselect
-  if config.ui.preselect == nil and config.ui.preselect_current ~= false then
-    vim.notify("(snipe) Conflicting options: ui.preselect_current is set to false while ui.preselect is not nil")
+  if config.ui.preselect ~= nil and config.ui.preselect_current then
+    vim.notify("(snipe) Conflicting options: ui.preselect_current is set true while ui.preselect is not nil")
   end
 
   -- Validate hint characters and setup tables
