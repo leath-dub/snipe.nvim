@@ -1,5 +1,7 @@
 local unset = -1
 
+local Config = require("snipe.config")
+
 local Menu = {
   config = {},
   dict = {},
@@ -28,13 +30,13 @@ local H = {}
 -- This config will only really apply if not
 -- being called through the high level interface (which pushes global config values down)
 H.default_config = {
-  dictionary = "sadflewcmpghio",
-  position = "topleft",
-  open_win_override = {},
+  dictionary = Config.hints.dictionary,
+  position = Config.ui.position,
+  open_win_override = Config.ui.open_win_override,
 
   -- unset means no maximum
-  max_height = unset,
-  align = "left", -- one of "right" and "left"
+  max_height = Config.ui.max_height,
+  align = Config.ui.text_align == 'right' and 'right' or 'left', -- one of "right" and "left"
   map_tags = nil, -- Apply map operation on generated tags
   set_window_local_options = function(wid)
     vim.wo[wid].foldenable = false
