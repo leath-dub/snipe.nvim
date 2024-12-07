@@ -3,6 +3,8 @@ local Config = require("snipe.config")
 
 Snipe.setup = function(config)
   Config.setup(config)
+  --- @deprecated Snipe.config is deprecated, use require('snipe.config') instead
+  Snipe.config = Config
 
   local SnipeMenu = require("snipe.menu")
   Snipe.global_menu = SnipeMenu:new({
