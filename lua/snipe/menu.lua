@@ -2,6 +2,7 @@ local unset = -1
 
 local Config = require("snipe.config")
 
+---@class snipe.Menu
 local Menu = {
   config = {},
   dict = {},
@@ -33,10 +34,18 @@ H.default_config = {
   dictionary = Config.hints.dictionary,
   position = Config.ui.position,
   open_win_override = Config.ui.open_win_override,
+  default_keymaps = {
+    -- if enabled, the default keymaps will be set automatically
+    auto_setup = false,
+    cancel = Config.navigate.cancel_snipe,
+    under_cursor = Config.navigate.under_cursor,
+    next_page = Config.navigate.next_page,
+    prev_page = Config.navigate.prev_page,
+  },
 
   -- unset means no maximum
   max_height = Config.ui.max_height,
-  align = Config.ui.text_align == 'right' and 'right' or 'left', -- one of "right" and "left"
+  align = Config.ui.text_align == "right" and "right" or "left", -- one of "right" and "left"
   map_tags = nil, -- Apply map operation on generated tags
   set_window_local_options = function(wid)
     vim.wo[wid].foldenable = false
@@ -45,12 +54,63 @@ H.default_config = {
   end,
 }
 
+---@class snipe.MenuKeymapCallbacks
+---@field close? fun(m)
+---@field nav_next? fun(m)
+---@field nav_prev? fun(m)
+---@field under_cursor? fun(m: snipe.Menu, index: number)
+
+---@param callbacks ?snipe.MenuKeymapCallbacks
+function Menu:default_keymaps(callbacks)
+  local keymaps = self.config.default_keymaps
+
+  local default_callbacks = {
+    close = function()
+      self:close()
+    end,
+    nav_next = function()
+      self:goto_next_page()
+      self:reopen()
+    end,
+    nav_prev = function()
+      self:goto_prev_page()
+      self:reopen()
+    end,
+    under_cursor = function()
+      local hovered = self:hovered()
+      self.tag_followed(self, hovered)
+    end,
+  }
+
+  callbacks = vim.tbl_extend("force", default_callbacks, callbacks or {})
+
+  local function set_keymap(key, cb, mode)
+    mode = mode or "n"
+    vim.keymap.set(mode, key, cb, { nowait = true, buffer = self.buf })
+  end
+
+  set_keymap(keymaps.next_page, callbacks.nav_next)
+  set_keymap(keymaps.prev_page, callbacks.nav_prev)
+  set_keymap(keymaps.under_cursor, callbacks.under_cursor)
+
+  local cancel_keys = type(keymaps.cancel) == "string" and { keymaps.cancel } or keymaps.cancel
+  for _, key in ipairs(cancel_keys or {}) do
+    set_keymap(key, callbacks.close)
+  end
+end
+
 --- @param config ?table
 function Menu:new(config)
   local o = setmetatable({}, self)
   o.__index = self
-  o.config = vim.tbl_extend("keep", config or {}, H.default_config)
+  o.config = vim.tbl_deep_extend("keep", config or {}, H.default_config)
   o.dict, o.dict_index = H.generate_dict_structs(o.config.dictionary)
+
+  if o.config.default_keymaps.auto_setup then
+    o:add_new_buffer_callback(function()
+      o:default_keymaps()
+    end)
+  end
   return o
 end
 
