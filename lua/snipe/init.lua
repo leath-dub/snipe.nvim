@@ -29,19 +29,19 @@ function Snipe.default_map_tags(tags)
   return tags
 end
 
+---@param m snipe.Menu
 function Snipe.default_keymaps(m)
-  local nav_next = function()
-    m:goto_next_page()
-    m:reopen()
-  end
+  m:default_keymaps({
+    under_cursor = function()
+      local hovered = m:hovered()
+      m:close()
+      vim.api.nvim_set_current_buf(m.items[hovered].id)
+    end,
+  })
 
-  local nav_prev = function()
-    m:goto_prev_page()
-    m:reopen()
-  end
+  local opts = { nowait = true, buffer = m.buf }
 
-  vim.keymap.set("n", Config.navigate.next_page, nav_next, { nowait = true, buffer = m.buf })
-  vim.keymap.set("n", Config.navigate.prev_page, nav_prev, { nowait = true, buffer = m.buf })
+  -- Specific keymaps
   vim.keymap.set("n", Config.navigate.close_buffer, function()
     local hovered = m:hovered()
     local bufnr = m.items[hovered].id
@@ -53,29 +53,20 @@ function Snipe.default_keymaps(m)
     vim.api.nvim_set_current_win(m.win)
     table.remove(m.items, hovered)
     m:reopen()
-  end, { nowait = true, buffer = m.buf })
+  end, opts)
 
   vim.keymap.set("n", Config.navigate.open_vsplit, function()
     local bufnr = m.items[m:hovered()].id
     m:close() -- make sure to call first !
     vim.api.nvim_open_win(bufnr, true, { vertical = true, win = 0 })
-  end, { nowait = true, buffer = m.buf })
+  end, opts)
 
   vim.keymap.set("n", Config.navigate.open_split, function()
     local split_direction = vim.opt.splitbelow:get() and "below" or "above"
     local bufnr = m.items[m:hovered()].id
     m:close() -- make sure to call first !
     vim.api.nvim_open_win(bufnr, true, { split = split_direction, win = 0 })
-  end, { nowait = true, buffer = m.buf })
-
-  vim.keymap.set("n", Config.navigate.cancel_snipe, function()
-    m:close()
-  end, { nowait = true, buffer = m.buf })
-  vim.keymap.set("n", Config.navigate.under_cursor, function()
-    local hovered = m:hovered()
-    m:close()
-    vim.api.nvim_set_current_buf(m.items[hovered].id)
-  end, { nowait = true, buffer = m.buf })
+  end, opts)
 
   vim.keymap.set("n", Config.navigate.change_tag, function()
     local item_id = m:hovered()
@@ -83,7 +74,7 @@ function Snipe.default_keymaps(m)
       table.insert(Snipe.index_to_tag, { index = item_id, tag = input })
       m:reopen()
     end)
-  end, { nowait = true, buffer = m.buf })
+  end, opts)
 end
 
 Snipe.directory_separator = "@"

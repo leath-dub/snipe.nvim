@@ -48,6 +48,7 @@ M.defaults = {
 
     -- In case you changed your mind, provide a keybind that lets yu
     -- cancel the snipe and close the window.
+    ---@type string|string[]
     cancel_snipe = "<esc>",
 
     -- Close the buffer under the cursor
@@ -85,7 +86,7 @@ M.validate = function(config)
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
     ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
-    ["navigate.cancel_snipe"] = { config.navigate.cancel_snipe, "string", true },
+    ["navigate.cancel_snipe"] = { config.navigate.cancel_snipe, { "string", "table" }, true },
     ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },

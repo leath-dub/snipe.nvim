@@ -98,6 +98,7 @@ You can pass in a table of options to the `setup` function, here are the default
 
     -- In case you changed your mind, provide a keybind that lets you
     -- cancel the snipe and close the window.
+    ---@type string|string[]
     cancel_snipe = "<esc>",
 
     -- Close the buffer under the cursor
