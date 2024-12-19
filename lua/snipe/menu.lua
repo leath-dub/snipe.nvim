@@ -269,8 +269,12 @@ function Menu:close()
   if self.win ~= unset and vim.api.nvim_win_is_valid(self.win) then
     vim.api.nvim_win_close(self.win, true)
   end
+  if self.buf ~= unset and vim.api.nvim_buf_is_valid(self.buf) then
+    vim.api.nvim_buf_delete(self.buf, { force = true })
+  end
 
   self.win = unset
+  self.buf = unset
 end
 
 function Menu:get_window_opts(height, width)
