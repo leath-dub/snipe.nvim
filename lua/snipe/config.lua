@@ -1,5 +1,5 @@
 ---@class snipe.Config: snipe.DefaultConfig
-M = {}
+local M = {}
 
 ---@class snipe.DefaultConfig
 M.defaults = {
