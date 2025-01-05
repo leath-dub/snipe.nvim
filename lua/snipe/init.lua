@@ -54,7 +54,7 @@ function Snipe.default_keymaps(m)
     if ok then
       snacks.bufdelete(bufnr)
     else
-      vim.api.nvim_buf_delete(bufnr, { force = true })
+      vim.api.nvim_buf_delete(bufnr, { force = false })
     end
 
     vim.api.nvim_set_current_win(m.win)
