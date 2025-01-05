@@ -49,7 +49,14 @@ function Snipe.default_keymaps(m)
     -- window cannot be deleted when focused on a floating window
     m.opened_from_wid = m:open_over()
     vim.api.nvim_set_current_win(m.opened_from_wid)
-    vim.api.nvim_buf_delete(bufnr, { force = false })
+
+    local ok, snacks = pcall(require, "snacks")
+    if ok then
+      snacks.bufdelete(bufnr)
+    else
+      vim.api.nvim_buf_delete(bufnr, { force = false })
+    end
+
     vim.api.nvim_set_current_win(m.win)
     table.remove(m.items, hovered)
     m:reopen()
