@@ -77,7 +77,7 @@ You can pass in a table of options to the `setup` function, here are the default
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
     -- Can be "left", "right" or "file-first"
-    -- NOTE: "file-first" buts the file name first and then the directory name
+    -- NOTE: "file-first" puts the file name first and then the directory name
     text_align = "left",
   },
   hints = {

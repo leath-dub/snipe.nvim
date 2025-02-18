@@ -1,5 +1,7 @@
 local Snipe = {}
+local Buffer = require("snipe.buffer")
 local Config = require("snipe.config")
+local Highlights = require("snipe.highlights")
 
 Snipe.setup = function(config)
   Config.setup(config)
@@ -11,7 +13,6 @@ Snipe.setup = function(config)
     map_tags = Snipe.default_map_tags,
     set_window_local_options = Snipe.set_window_local_options,
   })
-  Snipe.global_items = {}
 end
 
 function Snipe.set_window_local_options(wid)
@@ -84,43 +85,99 @@ function Snipe.default_keymaps(m)
   end, opts)
 end
 
-Snipe.directory_separator = "@"
-
--- Function is used when "file-first" is set as `ui.text_align`
-function Snipe.file_first_format(buffers)
-  for i, item in ipairs(buffers) do
-    local e = item.name
-    local basename = vim.fs.basename(e)
-    local dirname = vim.fs.dirname(e)
-    buffers[i].meta = { prefix = basename, dir = dirname }
-  end
-
-  local max = 0
-  for _, e in ipairs(buffers) do
-    if #e.meta.prefix > max then
-      max = #e.meta.prefix
+---create "format" function based on Config.ui options
+---@param buffers snipe.Buffer[]
+---@return function
+function Snipe.create_buffer_formatter(buffers)
+  if Config.ui.buffer_format ~= nil then -- custom buffer_format takes precedence
+    return Snipe.default_fmt(Config.ui.buffer_format)
+  elseif Config.ui.text_align == "file-first" then -- pre-format basename if text_align is "file-first"
+    local max_name_length = #buffers[1].basename
+    for _, buf in ipairs(buffers) do
+      if #buf.basename > max_name_length then
+        max_name_length = #buf.basename
+      end
     end
+    return Snipe.default_fmt({
+      "icon",
+      function(buffer)
+        return buffer.basename .. string.rep(" ", max_name_length - #buffer.basename)
+      end,
+      "directory",
+    })
+  else -- return full name if text_align is "left"|"right", actual alignment will be done by `Menu`
+    return Snipe.default_fmt({
+      function(buffer)
+        return buffer.name
+      end,
+    })
   end
-
-  for i, e in ipairs(buffers) do
-    local padding_len = max - #e.meta.prefix
-    local padding = string.rep(" ", padding_len)
-    if e.meta.dir ~= nil then
-      buffers[i].pre_formatted =
-        string.format("%s%s %s %s", e.meta.prefix, padding, Snipe.directory_separator, e.meta.dir)
-    else
-      buffers[i].pre_formatted = string.format("%s", e.meta.prefix)
-    end
-  end
-
-  return buffers
 end
 
-function Snipe.default_fmt(item)
-  if item.pre_formatted ~= nil then
-    return item.pre_formatted
+---create format function for `Menu`
+---@param line_format (string|function)[]
+---@return fun(buf: snipe.Buffer): string, {first: integer, last: integer, hlgroup: string}[] - format function
+function Snipe.default_fmt(line_format)
+  return function(item)
+    ---@type { first: integer, last: integer, hlgroup: string}[]
+    local highlights = {}
+    local result = ""
+    local hl_start_index = 1
+
+    for _, format in ipairs(line_format) do
+      if format == "filename" then
+        result = result .. item.basename .. " "
+        table.insert(highlights, {
+          first = hl_start_index,
+          last = hl_start_index + #item.basename + 1,
+          hlgroup = Highlights.highlight_groups.filename.name,
+        })
+        hl_start_index = hl_start_index + #item.basename + 1
+      elseif format == "directory" then
+        result = result .. item.dirname .. " "
+        table.insert(highlights, {
+          first = hl_start_index,
+          last = hl_start_index + #item.dirname + 1,
+          hlgroup = Highlights.highlight_groups.dirname.name,
+        })
+        hl_start_index = hl_start_index + #item.dirname + 1
+      elseif format == "icon" then
+        -- try mini.icons
+        if _G.MiniIcons then
+          local icon, hl = MiniIcons.get("file", item.basename)
+          result = result .. icon .. " "
+          table.insert(highlights, {
+            first = hl_start_index,
+            last = hl_start_index + #icon + 1,
+            hlgroup = hl,
+          })
+          hl_start_index = hl_start_index + #icon + 1
+        end
+        -- TODO: try nvim-web-devicons
+        --
+        -- ignore "icon" altogether if no supported icon provider found
+      else
+        local text, hl = nil, nil
+        if type(format) == "string" then
+          text = format
+        elseif type(format) == "function" then
+          text, hl = format(item)
+        else
+          -- invalid format passed, ignore
+        end
+        if text then
+          result = result .. text .. " "
+          table.insert(highlights, {
+            first = hl_start_index,
+            last = hl_start_index + #text + 1,
+            hlgroup = hl or Highlights.highlight_groups.text.name,
+          })
+          hl_start_index = hl_start_index + #text + 1
+        end
+      end
+    end
+    return result, highlights
   end
-  return item.name
 end
 
 function Snipe.default_select(m, i)
@@ -146,28 +203,27 @@ end
 
 function Snipe.open_buffer_menu()
   local cmd = Config.sort == "last" and "ls t" or "ls"
-  Snipe.global_items = require("snipe.buffer").get_buffers(cmd)
-  if Config.ui.text_align == "file-first" then
-    Snipe.global_items = Snipe.file_first_format(Snipe.global_items)
-  end
+  ---@type snipe.Buffer[]
+  local buffers = Buffer.get_buffers(cmd)
+  local format_buffer = Snipe.create_buffer_formatter(buffers)
   Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
 
   if Config.ui.preselect then
-    local i = Config.ui.preselect(Snipe.global_items)
-    Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt, i)
+    local i = Config.ui.preselect(buffers)
+    Snipe.global_menu:open(buffers, Snipe.default_select, format_buffer, i)
   elseif Config.ui.preselect_current then
     local opened = false
-    for i, b in ipairs(Snipe.global_items) do
+    for i, b in ipairs(buffers) do
       if b.classifiers:sub(2, 2) == "%" then
-        Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt, i)
+        Snipe.global_menu:open(buffers, Snipe.default_select, format_buffer, i)
         opened = true
       end
     end
     if not opened then
-      Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt)
+      Snipe.global_menu:open(buffers, Snipe.default_select, format_buffer)
     end
   else
-    Snipe.global_menu:open(Snipe.global_items, Snipe.default_select, Snipe.default_fmt)
+    Snipe.global_menu:open(buffers, Snipe.default_select, format_buffer)
   end
 end
 

@@ -1,6 +1,7 @@
 local unset = -1
 
 local Config = require("snipe.config")
+local Highlights = require("snipe.highlights")
 
 ---@class snipe.Menu
 local Menu = {
@@ -151,6 +152,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
   -- The actual list of strings that are displayed
   local widest_line_width = 0
   local display_lines = {}
+  local lines_highlights = {}
 
   if self.config.align == "right" then
     local widest = #self.display_items[1]
@@ -171,7 +173,14 @@ function Menu:open(items, tag_followed, fmt, preselect)
     end
   else
     for i, item in self.display_items:ipairs() do
-      display_lines[i] = string.format("%s %s", tags[i], fmt and fmt(item) or item)
+      local line_string = item
+      local line_highlights = nil
+      if fmt then
+        line_string, line_highlights = fmt(item)
+      end
+      display_lines[i] = string.format("%s %s", tags[i], line_string)
+      lines_highlights[i] = line_highlights
+
       if #display_lines[i] > widest_line_width then
         widest_line_width = #display_lines[i]
       end
@@ -208,15 +217,39 @@ function Menu:open(items, tag_followed, fmt, preselect)
   end
 
   -- Clear old highlights
-  vim.api.nvim_buf_clear_namespace(self.buf, H.highlight_ns, 0, #tags)
+  vim.api.nvim_buf_clear_namespace(self.buf, Highlights.highlight_ns, 0, #tags)
 
   -- Set the highlights and keymaps for tags
   for i, tag in ipairs(tags) do
-    vim.api.nvim_buf_add_highlight(self.buf, H.highlight_ns, "SnipeHint", i - 1, 0, tag_width)
+    vim.api.nvim_buf_add_highlight(
+      self.buf,
+      Highlights.highlight_ns,
+      Highlights.highlight_groups.hint.name,
+      i - 1,
+      0,
+      tag_width
+    )
     vim.keymap.set("n", tag, function()
       tag_followed(self, self.display_items.offset + i - 1)
     end, { nowait = true, buffer = self.buf })
   end
+
+  -- Set line highlights
+  for i, line_hl in ipairs(lines_highlights) do
+    if line_hl ~= nil then
+      for _, hl in ipairs(line_hl) do
+        vim.api.nvim_buf_add_highlight(
+          self.buf,
+          Highlights.highlight_ns,
+          hl.hlgroup,
+          i - 1,
+          tag_width + hl.first, -- offset by tag_width
+          tag_width + hl.last -- offset by tag_width
+        )
+      end
+    end
+  end
+
   self.old_tags = tags
 end
 
@@ -345,14 +378,14 @@ function Menu:update_window(height, width)
 
   vim.api.nvim_win_set_cursor(self.win, { 1, 0 }) -- make sure first line is shown
   vim.api.nvim_win_set_cursor(self.win, cursor_pos)
-  vim.api.nvim_win_set_hl_ns(self.win, H.highlight_ns)
+  vim.api.nvim_win_set_hl_ns(self.win, Highlights.highlight_ns)
   self.config.set_window_local_options(self.win)
 end
 
 function Menu:create_window(bufnr, height, width)
   local win = vim.api.nvim_open_win(bufnr, false, self:get_window_opts(height, width))
 
-  vim.api.nvim_win_set_hl_ns(win, H.highlight_ns)
+  vim.api.nvim_win_set_hl_ns(win, Highlights.highlight_ns)
   self.config.set_window_local_options(win)
 
   return win
@@ -386,11 +419,6 @@ H.window_get_max_height = function()
   local has_statusline = vim.o.laststatus > 0
   -- Remove 2 from maximum height to account for top and bottom borders
   return vim.o.lines - vim.o.cmdheight - (has_tabline and 1 or 0) - (has_statusline and 1 or 0) - 2
-end
-
-H.create_default_hl = function()
-  H.highlight_ns = vim.api.nvim_create_namespace("")
-  vim.api.nvim_set_hl(H.highlight_ns, "SnipeHint", { link = "CursorLineNr" })
 end
 
 H.clamp = function(val, min, max)
@@ -468,6 +496,6 @@ H.generate_tags = function(n, dict, dict_index)
   return tags
 end
 
-H.create_default_hl()
+Highlights.create_default_hl()
 
 return Menu
