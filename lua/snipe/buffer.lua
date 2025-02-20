@@ -1,20 +1,24 @@
 local M = {}
 
-local Buffer = {
-  id = 0,
-  name = "",
-  classifiers = "     ", -- see :help ls for more info
-}
+---@class snipe.Buffer
+---@field id integer buffer id
+---@field name string full name of the buffer, as in ":ls" output
+---@field classifiers string see :help ls for more info
+
+---@class snipe.Buffer
+local Buffer = {}
 
 Buffer.__index = Buffer
 
 M.Buffer = Buffer
 
--- Converts single line from ":buffers" output
+---create snipe.Buffer from ":ls" output string
+---@param s string - ":ls" output line, ie. '49 %a + "lua/snipe/buffer.lua"         line 18'
+---@return snipe.Buffer
 function Buffer:from_line(s)
   local o = setmetatable({}, Buffer)
 
-  o.id = tonumber(vim.split(s, " ", { trimempty = true })[1])
+  o.id = tonumber(vim.split(s, " ", { trimempty = true })[1]) --[[@as integer]]
   o.classifiers = s:sub(4, 8)
 
   local ss = s:find('"')

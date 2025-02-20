@@ -27,8 +27,22 @@ M.defaults = {
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
     -- Can be "left", "right" or "file-first"
-    -- NOTE: "file-first" buts the file name first and then the directory name
+    -- NOTE: "file-first" puts the file name first and then the directory name
     text_align = "left",
+
+    -- Provide custom buffer list format
+    -- Available options:
+    --  "filename" - basename of the buffer
+    --  "directory" - buffer parent directory path
+    --  "icon" - icon for buffer filetype from "mini.icons" or "nvim-web-devicons"
+    --  string - any string, will be inserted as is
+    --  fun(buffer_object): string,string - function that takes snipe.Buffer object as an argument
+    --    and returns a string to be inserted and optional highlight group name
+    -- buffer_format = { "->", "icon", "filename", "", "directory", function(buf)
+    --   if vim.fn.isdirectory(vim.api.nvim_buf_get_name(buf.id)) == 1 then
+    --     return " ", "SnipeText"
+    --   end
+    -- end },
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
