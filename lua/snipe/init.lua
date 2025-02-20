@@ -100,9 +100,11 @@ function Snipe.create_buffer_formatter(buffers)
     end
     return Snipe.default_fmt({
       "icon",
+      " ",
       function(buffer)
         return buffer.basename .. string.rep(" ", max_name_length - #buffer.basename)
       end,
+      " ",
       "directory",
     })
   else -- return full name if text_align is "left"|"right", actual alignment will be done by `Menu`
@@ -126,32 +128,32 @@ function Snipe.default_fmt(line_format)
 
     for _, format in ipairs(line_format) do
       if format == "filename" then
-        result = result .. item.basename .. " "
+        result = result .. item.basename
         table.insert(highlights, {
           first = hl_start_index,
-          last = hl_start_index + #item.basename + 1,
+          last = hl_start_index + #item.basename,
           hlgroup = Highlights.highlight_groups.filename.name,
         })
-        hl_start_index = hl_start_index + #item.basename + 1
+        hl_start_index = hl_start_index + #item.basename
       elseif format == "directory" then
-        result = result .. item.dirname .. " "
+        result = result .. item.dirname
         table.insert(highlights, {
           first = hl_start_index,
-          last = hl_start_index + #item.dirname + 1,
+          last = hl_start_index + #item.dirname,
           hlgroup = Highlights.highlight_groups.dirname.name,
         })
-        hl_start_index = hl_start_index + #item.dirname + 1
+        hl_start_index = hl_start_index + #item.dirname
       elseif format == "icon" then
         -- try mini.icons
         if _G.MiniIcons then
           local icon, hl = MiniIcons.get("file", item.basename)
-          result = result .. icon .. " "
+          result = result .. icon
           table.insert(highlights, {
             first = hl_start_index,
-            last = hl_start_index + #icon + 1,
+            last = hl_start_index + #icon,
             hlgroup = hl,
           })
-          hl_start_index = hl_start_index + #icon + 1
+          hl_start_index = hl_start_index + #icon
         end
         -- TODO: try nvim-web-devicons
         --
@@ -166,13 +168,13 @@ function Snipe.default_fmt(line_format)
           -- invalid format passed, ignore
         end
         if text then
-          result = result .. text .. " "
+          result = result .. text
           table.insert(highlights, {
             first = hl_start_index,
-            last = hl_start_index + #text + 1,
+            last = hl_start_index + #text,
             hlgroup = hl or Highlights.highlight_groups.text.name,
           })
-          hl_start_index = hl_start_index + #text + 1
+          hl_start_index = hl_start_index + #text
         end
       end
     end
