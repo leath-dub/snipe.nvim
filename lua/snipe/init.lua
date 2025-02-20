@@ -107,11 +107,13 @@ function Snipe.create_buffer_formatter(buffers)
       " ",
       "directory",
     })
-  else -- return full name if text_align is "left"|"right", actual alignment will be done by `Menu`
+  else -- return "directory/filename" if text_align is "left"|"right", actual alignment will be done by `Menu`
     return Snipe.default_fmt({
-      function(buffer)
-        return buffer.name
+      "directory",
+      function()
+        return "/", "SnipeDirname"
       end,
+      "filename",
     })
   end
 end
