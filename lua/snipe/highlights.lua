@@ -3,7 +3,6 @@ local M = {}
 M.highlight_groups = {
   hint = {
     name = "SnipeHint",
-    -- definition = { link = "CursorLineNr" },
     definition = { link = "Boolean" },
   },
   text = {
