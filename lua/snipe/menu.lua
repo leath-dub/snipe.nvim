@@ -164,9 +164,21 @@ function Menu:open(items, tag_followed, fmt, preselect)
     end
 
     for i, item in self.display_items:ipairs() do
-      local fmtd = fmt and fmt(item) or item
-      local align = (" "):rep(widest - #fmtd)
-      display_lines[i] = string.format("%s %s%s", tags[i], align, fmtd)
+      local line_string = item
+      local line_highlights = nil
+      if fmt then
+        line_string, line_highlights = fmt(item)
+      end
+      local pad = (" "):rep(widest - #line_string)
+      display_lines[i] = string.format("%s %s%s", tags[i], pad, line_string)
+      -- increase highlights first/last by pad size
+      if line_highlights ~= nil then
+        for _, hl in ipairs(line_highlights) do
+          hl.first = hl.first + #pad
+          hl.last = hl.last + #pad
+        end
+        lines_highlights[i] = line_highlights
+      end
       if #display_lines[i] > widest_line_width then
         widest_line_width = #display_lines[i]
       end
