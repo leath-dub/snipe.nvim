@@ -152,9 +152,17 @@ function Snipe.default_fmt(line_format)
         })
         hl_start_index = hl_start_index + #dirname
       elseif format == "icon" then
+        local icon, hl = nil, nil
         -- try mini.icons
         if _G.MiniIcons then
-          local icon, hl = MiniIcons.get("file", item.name)
+          icon, hl = MiniIcons.get("file", item.name)
+        end
+        -- try nvim-web-devicons
+        local has_devicons, devicons = pcall(require, "nvim-web-devicons")
+        if not icon and has_devicons then
+          icon, hl = devicons.get_icon(item.name)
+        end
+        if icon then
           result = result .. icon
           table.insert(highlights, {
             first = hl_start_index,
@@ -162,10 +170,9 @@ function Snipe.default_fmt(line_format)
             hlgroup = hl,
           })
           hl_start_index = hl_start_index + #icon
+        else
+          -- ignore "icon" altogether if no supported icon provider found
         end
-        -- TODO: try nvim-web-devicons
-        --
-        -- ignore "icon" altogether if no supported icon provider found
       else
         local text, hl = nil, nil
         if type(format) == "string" then
