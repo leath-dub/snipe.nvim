@@ -265,6 +265,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
   self.old_tags = tags
 
   vim.api.nvim_create_autocmd("WinLeave", {
+    group = vim.api.nvim_create_augroup("SnipeMenu", { clear = true }),
     callback = function()
       self:close()
     end,
