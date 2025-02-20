@@ -92,17 +92,21 @@ function Snipe.create_buffer_formatter(buffers)
   if Config.ui.buffer_format ~= nil then -- custom buffer_format takes precedence
     return Snipe.default_fmt(Config.ui.buffer_format)
   elseif Config.ui.text_align == "file-first" then -- pre-format basename if text_align is "file-first"
-    local max_name_length = #buffers[1].basename
-    for _, buf in ipairs(buffers) do
-      if #buf.basename > max_name_length then
-        max_name_length = #buf.basename
+    local buffers_basenames = vim.tbl_map(function(buf)
+      return vim.fs.basename(buf.name)
+    end, buffers)
+    local max_name_length = #buffers_basenames[1]
+    for _, basename in ipairs(buffers_basenames) do
+      if #basename > max_name_length then
+        max_name_length = #basename
       end
     end
     return Snipe.default_fmt({
       "icon",
       " ",
       function(buffer)
-        return buffer.basename .. string.rep(" ", max_name_length - #buffer.basename)
+        local basename = vim.fs.basename(buffer.name)
+        return basename .. string.rep(" ", max_name_length - #basename)
       end,
       " ",
       "directory",
@@ -130,25 +134,27 @@ function Snipe.default_fmt(line_format)
 
     for _, format in ipairs(line_format) do
       if format == "filename" then
-        result = result .. item.basename
+        local basename = vim.fs.basename(item.name)
+        result = result .. basename
         table.insert(highlights, {
           first = hl_start_index,
-          last = hl_start_index + #item.basename,
+          last = hl_start_index + #basename,
           hlgroup = Highlights.highlight_groups.filename.name,
         })
-        hl_start_index = hl_start_index + #item.basename
+        hl_start_index = hl_start_index + #basename
       elseif format == "directory" then
-        result = result .. item.dirname
+        local dirname = vim.fs.dirname(item.name)
+        result = result .. dirname
         table.insert(highlights, {
           first = hl_start_index,
-          last = hl_start_index + #item.dirname,
+          last = hl_start_index + #dirname,
           hlgroup = Highlights.highlight_groups.dirname.name,
         })
-        hl_start_index = hl_start_index + #item.dirname
+        hl_start_index = hl_start_index + #dirname
       elseif format == "icon" then
         -- try mini.icons
         if _G.MiniIcons then
-          local icon, hl = MiniIcons.get("file", item.basename)
+          local icon, hl = MiniIcons.get("file", item.name)
           result = result .. icon
           table.insert(highlights, {
             first = hl_start_index,

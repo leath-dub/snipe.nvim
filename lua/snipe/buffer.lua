@@ -3,8 +3,6 @@ local M = {}
 ---@class snipe.Buffer
 ---@field id integer buffer id
 ---@field name string full name of the buffer, as in ":ls" output
----@field basename string filename of the buffer
----@field dirname string parent directory path
 ---@field classifiers string see :help ls for more info
 
 ---@class snipe.Buffer
@@ -27,8 +25,6 @@ function Buffer:from_line(s)
   local se = #s - s:reverse():find('"')
 
   o.name = s:sub(ss + 1, se)
-  o.basename = vim.fs.basename(o.name)
-  o.dirname = vim.fs.dirname(o.name)
 
   return o
 end
