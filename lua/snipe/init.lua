@@ -256,13 +256,22 @@ function Snipe.ui_select(items, opts, on_choice)
     return
   end
 
+  local format_item = function (item)
+    local fmtd = opts.format_item(item) -- Force take only the first return value
+                                       -- This is because snipe format function
+                                       -- looks at the second return value and
+                                       -- expects it to have highlight
+                                       -- information
+    return fmtd
+  end
+
   if opts.prompt ~= nil then
     Snipe.ui_select_menu.config.open_win_override.title = opts.prompt
   end
   Snipe.ui_select_menu:open(items, function(m, i)
     on_choice(m.items[i], i)
     m:close()
-  end, opts.format_item)
+  end, format_item)
   Snipe.ui_select_menu.config.open_win_override.title = Config.ui.open_win_override.title
 end
 
