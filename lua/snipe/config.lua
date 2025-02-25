@@ -105,7 +105,7 @@ M.validate = function(config)
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },
     ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
-    ["sort"] = { config.sort, "string", true },
+    ["sort"] = { config.sort, { "string", "function" }, true },
   }
 
   vim.validate(validation_set)
