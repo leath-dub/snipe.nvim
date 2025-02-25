@@ -218,10 +218,19 @@ function Snipe.preselect_by_classifier(classifier)
   end
 end
 
-function Snipe.open_buffer_menu()
+---Get the buffer list sorted in the order of the `sort` config options
+---@return snipe.Buffer[]
+function Snipe.get_sorted_buffer_list()
   local cmd = Config.sort == "last" and "ls t" or "ls"
-  ---@type snipe.Buffer[]
   local buffers = Buffer.get_buffers(cmd)
+  if type(Config.sort) == "function" then
+    return Config.sort(buffers)
+  end
+  return buffers
+end
+
+function Snipe.open_buffer_menu()
+  local buffers = Snipe.get_sorted_buffer_list()
   local format_buffer = Snipe.create_buffer_formatter(buffers)
   Snipe.global_menu:add_new_buffer_callback(Snipe.default_keymaps)
 
