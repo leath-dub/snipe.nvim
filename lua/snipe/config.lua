@@ -4,30 +4,36 @@ local M = {}
 ---@class snipe.DefaultConfig
 M.defaults = {
   ui = {
+    ---@type integer
     max_height = -1, -- -1 means dynamic height
     -- Where to place the ui window
     -- Can be any of "topleft", "bottomleft", "topright", "bottomright", "center", "cursor" (sets under the current cursor pos)
+    ---@type "topleft"|"bottomleft"|"topright"|"bottomright"|"center"|"cursor"
     position = "topleft",
     -- Override options passed to `nvim_open_win`
     -- Be careful with this as snipe will not validate
     -- anything you override here. See `:h nvim_open_win`
     -- for config options
+    ---@type vim.api.keyset.win_config
     open_win_override = {
       -- title = "My Window Title",
       border = "single", -- use "rounded" for rounded border
     },
 
     -- Preselect the currently open buffer
+    ---@type boolean
     preselect_current = false,
 
     -- Set a function to preselect the currently open buffer
     -- E.g, `preselect = require("snipe").preselect_by_classifier("#")` to
     -- preselect alternate buffer (see :h ls and look at the "Indicators")
+    ---@type nil|fun(buffers: snipe.Buffer[]): number
     preselect = nil, -- function (bs: Buffer[] [see lua/snipe/buffer.lua]) -> int (index)
 
     -- Changes how the items are aligned: e.g. "<tag> foo    " vs "<tag>    foo"
     -- Can be "left", "right" or "file-first"
     -- NOTE: "file-first" puts the file name first and then the directory name
+    ---@type "left"|"right"|"file-first"
     text_align = "left",
 
     -- Provide custom buffer list format
@@ -46,6 +52,7 @@ M.defaults = {
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
+    ---@type string
     dictionary = "sadflewcmpghio",
   },
   navigate = {
@@ -80,7 +87,11 @@ M.defaults = {
     change_tag = "C",
   },
   -- The default sort used for the buffers
-  -- Can be any of "last", (sort buffers by last accessed) "default" (sort buffers by its number)
+  -- Can be any of:
+  --  "last" - sort buffers by last accessed
+  --  "default" - sort buffers by its number
+  --  fun(bs:snipe.Buffer[]):snipe.Buffer[] - custom sort function, should accept a list of snipe.Buffer[] as an argument and return sorted list of snipe.Buffer[]
+  ---@type "last"|"default"|fun(buffers:snipe.Buffer[]):snipe.Buffer[]
   sort = "default",
 }
 
