@@ -143,7 +143,14 @@ function Snipe.default_fmt(line_format)
         })
         hl_start_index = hl_start_index + #basename
       elseif format == "directory" then
-        local dirname = vim.fs.dirname(item.name)
+        local full_path = vim.api.nvim_buf_get_name(item.id)
+        local cwd = vim.fn.getcwd()
+        local relative_to_cwd = item.name -- fallback
+        local _, cwd_end = full_path:find(cwd, 1, true)
+        if cwd_end then
+          relative_to_cwd = full_path:sub(cwd_end + 2) -- remove cwd and '/'
+        end
+        local dirname = vim.fs.dirname(relative_to_cwd)
         result = result .. dirname
         table.insert(highlights, {
           first = hl_start_index,
