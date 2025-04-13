@@ -98,16 +98,21 @@ M.defaults = {
 M.options = vim.deepcopy(M.defaults)
 
 M.validate = function(config)
-  vim.validate({ config = { config, "table", true } })
-
   local validation_set = {
+    ["config"] = { config, "table", true },
+
+    ["ui"] = { config.ui, "table", true },
     ["ui.max_width"] = { config.ui.max_width, "number", true },
     ["ui.position"] = { config.ui.position, "string", true },
     ["ui.open_win_override"] = { config.ui.open_win_override, "table", true },
     ["ui.preselect_current"] = { config.ui.preselect_current, "boolean", true },
     ["ui.preselect"] = { config.ui.preselect, "function", true },
     ["ui.text_align"] = { config.ui.text_align, "string", true },
+
+    ["hints"] = { config.hints, "table", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
+
+    ["navigate"] = { config.navigate, "table", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
     ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
@@ -116,10 +121,17 @@ M.validate = function(config)
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },
     ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
+
     ["sort"] = { config.sort, { "string", "function" }, true },
   }
 
-  vim.validate(validation_set)
+  if vim.fn.has("nvim-0.11") == 1 then
+    for name, value_validator_optional in pairs(validation_set) do
+      vim.validate(name, unpack(value_validator_optional))
+    end
+  else
+    vim.validate(validation_set)
+  end
 
   -- Make sure they are not using preselect_current and preselect
   if config.ui.preselect ~= nil and config.ui.preselect_current then
