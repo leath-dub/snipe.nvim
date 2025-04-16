@@ -1,4 +1,5 @@
 local Snipe = {}
+local Memo = require("snipe.memo")
 local Buffer = require("snipe.buffer")
 local Config = require("snipe.config")
 local Highlights = require("snipe.highlights")
@@ -23,12 +24,12 @@ end
 
 Snipe.index_to_tag = {}
 
-function Snipe.default_map_tags(tags)
+Snipe.default_map_tags = Memo.make(function(tags)
   for _, index_and_tag in ipairs(Snipe.index_to_tag) do
     tags[index_and_tag.index] = index_and_tag.tag
   end
   return tags
-end
+end, 1)
 
 ---@param m snipe.Menu
 function Snipe.default_keymaps(m)
@@ -88,7 +89,7 @@ end
 ---create "format" function based on Config.ui options
 ---@param buffers snipe.Buffer[]
 ---@return function
-function Snipe.create_buffer_formatter(buffers)
+Snipe.create_buffer_formatter = Memo.make(function(buffers)
   if Config.ui.buffer_format ~= nil then -- custom buffer_format takes precedence
     return Snipe.default_fmt(Config.ui.buffer_format)
   elseif Config.ui.text_align == "file-first" then -- pre-format basename if text_align is "file-first"
@@ -120,13 +121,13 @@ function Snipe.create_buffer_formatter(buffers)
       "filename",
     })
   end
-end
+end, 1)
 
 ---create format function for `Menu`
 ---@param line_format (string|function)[]
 ---@return fun(buf: snipe.Buffer): string, {first: integer, last: integer, hlgroup: string}[] - format function
 function Snipe.default_fmt(line_format)
-  return function(item)
+  return Memo.make(function(item)
     ---@type { first: integer, last: integer, hlgroup: string}[]
     local highlights = {}
     local result = ""
@@ -200,8 +201,8 @@ function Snipe.default_fmt(line_format)
         end
       end
     end
-    return result, highlights
-  end
+    return {result, highlights}
+  end, 1)
 end
 
 function Snipe.default_select(m, i)
@@ -225,15 +226,29 @@ function Snipe.preselect_by_classifier(classifier)
   end
 end
 
+local cached_buffer_list = nil
+
+vim.api.nvim_create_augroup("InvalidateBufferList", { clear = true })
+vim.api.nvim_create_autocmd({ "BufRead", "BufAdd", "BufDelete", "BufWipeout", "BufUnload" }, {
+  group = "InvalidateBufferList",
+  callback = function()
+    cached_buffer_list = nil
+  end,
+})
+
 ---Get the buffer list sorted in the order of the `sort` config options
 ---@return snipe.Buffer[]
 function Snipe.get_sorted_buffer_list()
+  if cached_buffer_list ~= nil then
+    return cached_buffer_list
+  end
   local cmd = Config.sort == "last" and "ls t" or "ls"
   local buffers = Buffer.get_buffers(cmd)
   if type(Config.sort) == "function" then
     return Config.sort(buffers)
   end
-  return buffers
+  cached_buffer_list = buffers
+  return cached_buffer_list
 end
 
 function Snipe.open_buffer_menu()

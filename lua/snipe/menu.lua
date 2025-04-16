@@ -1,5 +1,6 @@
 local unset = -1
 
+local Memo = require("snipe.memo")
 local Config = require("snipe.config")
 local Highlights = require("snipe.highlights")
 
@@ -7,7 +8,6 @@ local Highlights = require("snipe.highlights")
 local Menu = {
   config = {},
   dict = {},
-  dict_index = {},
   items = {},
   display_items = {},
   buf = unset,
@@ -105,7 +105,7 @@ function Menu:new(config)
   local o = setmetatable({}, self)
   o.__index = self
   o.config = vim.tbl_deep_extend("keep", config or {}, H.default_config)
-  o.dict, o.dict_index = H.generate_dict_structs(o.config.dictionary)
+  o.dict = H.generate_dict_structs(o.config.dictionary)
 
   if o.config.default_keymaps.auto_setup then
     o:add_new_buffer_callback(function()
@@ -144,7 +144,7 @@ function Menu:open(items, tag_followed, fmt, preselect)
   local num_items = math.min(#items - first_item_index + 1, max_page_size)
 
   self.display_items = Slice:new(items, first_item_index, num_items)
-  local tags = H.generate_tags(num_items, self.dict, self.dict_index)
+  local tags = H.generate_tags(num_items, self.dict)
   if self.config.map_tags ~= nil then
     tags = self.config.map_tags(tags)
   end
@@ -167,7 +167,9 @@ function Menu:open(items, tag_followed, fmt, preselect)
       local line_string = item
       local line_highlights = nil
       if fmt then
-        line_string, line_highlights = fmt(item)
+        local ret = fmt(item)
+        line_string = ret[1]
+        line_highlights = ret[2]
       end
       local pad = (" "):rep(widest - #line_string)
       display_lines[i] = string.format("%s %s%s", tags[i], pad, line_string)
@@ -188,7 +190,9 @@ function Menu:open(items, tag_followed, fmt, preselect)
       local line_string = item
       local line_highlights = nil
       if fmt then
-        line_string, line_highlights = fmt(item)
+        local ret = fmt(item)
+        line_string = ret[1]
+        line_highlights = ret[2]
       end
       display_lines[i] = string.format("%s %s", tags[i], line_string)
       lines_highlights[i] = line_highlights
@@ -211,9 +215,13 @@ function Menu:open(items, tag_followed, fmt, preselect)
     self.win = self:create_window(self.buf, num_items, widest_line_width)
   end
 
-  vim.bo[self.buf].modifiable = true
-  vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, display_lines)
-  vim.bo[self.buf].modifiable = false
+  local tags_changed = tags ~= self.old_tags
+
+  if tags_changed then
+    vim.bo[self.buf].modifiable = true
+    vim.api.nvim_buf_set_lines(self.buf, 0, -1, false, display_lines)
+    vim.bo[self.buf].modifiable = false
+  end
 
   vim.api.nvim_set_current_win(self.win)
 
@@ -223,41 +231,43 @@ function Menu:open(items, tag_followed, fmt, preselect)
 
   local tag_width = H.min_digits(#display_lines, #self.config.dictionary)
 
-  -- Remove old tags from the buffer
-  for _, old_tag in ipairs(self.old_tags) do
-    pcall(vim.api.nvim_buf_del_keymap, self.buf, "n", old_tag)
-  end
+  if tags_changed then
+    -- Remove old tags from the buffer
+    for _, old_tag in ipairs(self.old_tags) do
+      pcall(vim.api.nvim_buf_del_keymap, self.buf, "n", old_tag)
+    end
 
-  -- Clear old highlights
-  vim.api.nvim_buf_clear_namespace(self.buf, Highlights.highlight_ns, 0, #tags)
+    -- Clear old highlights
+    vim.api.nvim_buf_clear_namespace(self.buf, Highlights.highlight_ns, 0, #tags)
 
-  -- Set the highlights and keymaps for tags
-  for i, tag in ipairs(tags) do
-    vim.api.nvim_buf_add_highlight(
-      self.buf,
-      Highlights.highlight_ns,
-      Highlights.highlight_groups.hint.name,
-      i - 1,
-      0,
-      tag_width
-    )
-    vim.keymap.set("n", tag, function()
-      tag_followed(self, self.display_items.offset + i - 1)
-    end, { nowait = true, buffer = self.buf })
-  end
+    -- Set the highlights and keymaps for tags
+    for i, tag in ipairs(tags) do
+      vim.api.nvim_buf_add_highlight(
+        self.buf,
+        Highlights.highlight_ns,
+        Highlights.highlight_groups.hint.name,
+        i - 1,
+        0,
+        tag_width
+      )
+      vim.keymap.set("n", tag, function()
+        tag_followed(self, self.display_items.offset + i - 1)
+      end, { nowait = true, buffer = self.buf })
+    end
 
-  -- Set line highlights
-  for i, line_hl in ipairs(lines_highlights) do
-    if line_hl ~= nil then
-      for _, hl in ipairs(line_hl) do
-        vim.api.nvim_buf_add_highlight(
-          self.buf,
-          Highlights.highlight_ns,
-          hl.hlgroup,
-          i - 1,
-          tag_width + hl.first, -- offset by tag_width
-          tag_width + hl.last -- offset by tag_width
-        )
+    -- Set line highlights
+    for i, line_hl in ipairs(lines_highlights) do
+      if line_hl ~= nil then
+        for _, hl in ipairs(line_hl) do
+          vim.api.nvim_buf_add_highlight(
+            self.buf,
+            Highlights.highlight_ns,
+            hl.hlgroup,
+            i - 1,
+            tag_width + hl.first, -- offset by tag_width
+            tag_width + hl.last -- offset by tag_width
+          )
+        end
       end
     end
   end
@@ -452,69 +462,50 @@ end
 
 H.generate_dict_structs = function(dict_str)
   local dict = {}
-  local dict_index = {}
   for i = 1, #dict_str do
-    local c = dict_str:sub(i, i)
-    if dict_index[c] ~= nil then -- duplicate
-      vim.notify("(snipe) Dictionary must have unique items: ignoring duplicates", vim.log.levels.WARNING)
-    else
-      table.insert(dict, c)
-      dict_index[c] = i
-    end
+    table.insert(dict, dict_str:sub(i, i))
   end
-  return dict, dict_index
+  return dict
 end
 
--- Generating tags is essentially a generalized
--- form of counting where our unique digits is the
--- dictionary of characters with base = #characters
-H.generate_tags = function(n, dict, dict_index)
-  local max = dict[#dict]
-
-  local function inc_digit(digit)
-    return dict[(dict_index[digit] + 1) % (#dict + 1)]
+local function generate_tag_aux(d, base, acc, dict)
+  if d == 0 then
+    return acc
   end
+  return generate_tag_aux(math.floor(d / base), base, dict[d % base + 1] .. acc, dict)
+end
+generate_tag_aux = Memo.make(generate_tag_aux, 3) -- Our unique key is the first 3 arguments
 
-  local function inc(num)
-    local last = num[#num]
-    if last == max then
-      -- "carry the one"
-      local i = #num - 1
-      while i >= 1 and num[i] == max do
-        i = i - 1
-      end
+local function generate_tag(d, dict)
+  local acc = ""
+  local base = #dict
+  return generate_tag_aux(d, base, acc, dict)
+end
 
-      if i == 0 then -- increase number of digits
-        table.insert(num, dict[1])
-        i = 1
-        num[i] = dict[1]
-      end
-
-      -- i is what we need to increment and zero everything after it
-      num[i] = inc_digit(num[i])
-      for s = i + 1, #num do
-        num[s] = dict[1]
-      end
-
-      return num
-    end
-
-    num[#num] = inc_digit(last)
-    return num
-  end
-
-  -- This is so we can add trailing "0": where "0" is just first item in dictionary
-  local max_width = H.min_digits(n, #dict)
-
+local generate_tags = Memo.make(function(n, dict)
   local tags = {}
-  local tag = { dict[1] }
-  for _ = 1, n do
-    local lead = string.rep(dict[1], max_width - #tag)
-    table.insert(tags, lead .. table.concat(tag))
-    tag = inc(tag)
+  local max = 0
+  for i = 0, n do
+    local tag = generate_tag(i, dict);
+    if #tag > max then
+      max = #tag
+    end
+    table.insert(tags, tag)
   end
+  return {tags, max}
+end, 1)
 
-  return tags
+local pad_tags = Memo.make(function(tags, to, zerov)
+  local padded_tags = {}
+  for _, tag in ipairs(tags) do
+    table.insert(padded_tags, string.rep(zerov, to - #tag) .. tag)
+  end
+  return padded_tags
+end, 2)
+
+H.generate_tags = function (n, dict)
+  local ret = generate_tags(n, dict);
+  return pad_tags(ret[1], ret[2], dict[1])
 end
 
 Highlights.create_default_hl()
