@@ -49,13 +49,33 @@ M.defaults = {
     --     return " ", "SnipeText"
     --   end
     -- end },
+
+    -- Whether to remember mappings from bufnr -> tag
+    persist_tags = true,
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
     ---@type string
     dictionary = "sadflewcmpghio",
+    -- Character used to disambiguate tags when 'persist_tags' option is set
+    prefix_key = ".",
   },
   navigate = {
+    -- Specifies the "leader" key
+    -- This allows you to select a buffer but defer the action.
+    -- NOTE: this does not override your actual leader key!
+    leader = ",",
+
+    -- Leader map defines keys that follow a selection prefixed by the
+    -- leader key. For example (with tag "a"):
+    -- ,ad -> run leader_map["d"](m, i)
+    -- NOTE: the leader_map cannot specify multi character bindings.
+    leader_map = {
+      ["d"] = function (m, i) require("snipe").close_buf(m, i) end,
+      ["v"] = function (m, i) require("snipe").open_vsplit(m, i) end,
+      ["h"] = function (m, i) require("snipe").open_split(m, i) end,
+    },
+
     -- When the list is too long it is split into pages
     -- `[next|prev]_page` options allow you to navigate
     -- this list
@@ -67,7 +87,7 @@ M.defaults = {
     -- cursor
     under_cursor = "<cr>",
 
-    -- In case you changed your mind, provide a keybind that lets yu
+    -- In case you changed your mind, provide a keybind that lets you
     -- cancel the snipe and close the window.
     ---@type string|string[]
     cancel_snipe = "<esc>",
@@ -83,8 +103,8 @@ M.defaults = {
     -- Open buffer in split, based on `vim.opt.splitbelow`
     open_split = "H",
 
-    -- Change tag manually
-    change_tag = "C",
+    -- Change tag manually (note only works if `persist_tags` is not enabled)
+    -- change_tag = "C",
   },
   -- The default sort used for the buffers
   -- Can be any of:
@@ -111,8 +131,11 @@ M.validate = function(config)
 
     ["hints"] = { config.hints, "table", true },
     ["hints.dictionary"] = { config.hints.dictionary, "string", true },
+    ["hints.prefix_key"] = { config.hints.dictionary, "string", true },
 
     ["navigate"] = { config.navigate, "table", true },
+    ["navigate.leader"] = { config.navigate.leader, "string", true },
+    ["navigate.leader_map"] = { config.navigate.leader_map, "table", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
     ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
@@ -120,7 +143,6 @@ M.validate = function(config)
     ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
     ["navigate.open_split"] = { config.navigate.open_split, "string", true },
-    ["navigate.change_tag"] = { config.navigate.change_tag, "string", true },
 
     ["sort"] = { config.sort, { "string", "function" }, true },
   }
@@ -131,6 +153,21 @@ M.validate = function(config)
     end
   else
     vim.validate(validation_set)
+  end
+
+  if config.ui.persist_tags and config.navigate.change_tag ~= nil then
+    vim.notify("(snipe) Conflicting options: ui.persist_tags is set true while navigate.change_tag is not nil", vim.log.levels.WARNING)
+  end
+
+  local leader_binds = vim.tbl_keys(config.navigate.leader_map)
+  for _, lb in ipairs(leader_binds) do
+    if #lb > 1 then
+      vim.notify("(snipe) invalid leader_map binding '" .. lb .. "': leader_map bindings can only be single characters", vim.log.levels.ERROR)
+    end
+  end
+
+  if #config.hints.dictionary == 0 then
+    vim.notify("(snipe) Cannot have an empty dictionary", vim.log.levels.ERROR)
   end
 
   -- Make sure they are not using preselect_current and preselect
