@@ -89,7 +89,7 @@ end
 ---@param buffers snipe.Buffer[]
 ---@return function
 function Snipe.create_buffer_formatter(buffers)
-  if Config.ui.buffer_format ~= nil then -- custom buffer_format takes precedence
+  if #buffers == 0 or Config.ui.buffer_format ~= nil then -- custom buffer_format takes precedence
     return Snipe.default_fmt(Config.ui.buffer_format)
   elseif Config.ui.text_align == "file-first" then -- pre-format basename if text_align is "file-first"
     local buffers_basenames = vim.tbl_map(function(buf)
