@@ -13,6 +13,15 @@ Snipe.setup = function(config)
     map_tags = Snipe.default_map_tags,
     set_window_local_options = Snipe.set_window_local_options,
   })
+
+  -- Setup autocmd to prune persistent_tags
+  vim.api.nvim_create_autocmd("BufDelete", {
+    group = Snipe.global_menu.augroup,
+    callback = function(ev)
+      Snipe.global_menu:free_tag(ev.buf)
+    end,
+    desc = "Free up tags from closed buffers",
+  })
 end
 
 function Snipe.set_window_local_options(wid)
@@ -43,46 +52,30 @@ function Snipe.default_keymaps(m)
   local opts = { nowait = true, buffer = m.buf }
 
   -- Specific keymaps
-  vim.keymap.set("n", Config.navigate.close_buffer, function()
-    local hovered = m:hovered()
-    local bufnr = m.items[hovered].id
-    -- I have to hack switch back to main window, otherwise currently background focused
-    -- window cannot be deleted when focused on a floating window
-    m.opened_from_wid = m:open_over()
-    vim.api.nvim_set_current_win(m.opened_from_wid)
 
-    local ok, snacks = pcall(require, "snacks")
-    if ok then
-      snacks.bufdelete(bufnr)
-    else
-      vim.api.nvim_buf_delete(bufnr, { force = false })
-    end
+  if Config.navigate.close_buffer then
+    vim.keymap.set("n", Config.navigate.close_buffer, function()
+      Snipe.close_buf(m, m:hovered())
+    end, opts)
+  end
 
-    vim.api.nvim_set_current_win(m.win)
-    table.remove(m.items, hovered)
-    m:reopen()
-  end, opts)
+  if Config.navigate.open_vsplit then
+    vim.keymap.set("n", Config.navigate.open_vsplit, function()
+      Snipe.open_vsplit(m, m:hovered())
+    end, opts)
+  end
 
-  vim.keymap.set("n", Config.navigate.open_vsplit, function()
-    local bufnr = m.items[m:hovered()].id
-    m:close() -- make sure to call first !
-    vim.api.nvim_open_win(bufnr, true, { vertical = true, win = 0 })
-  end, opts)
+  if Config.navigate.open_split then
+    vim.keymap.set("n", Config.navigate.open_split, function()
+      Snipe.open_split(m, m:hovered())
+    end, opts)
+  end
 
-  vim.keymap.set("n", Config.navigate.open_split, function()
-    local split_direction = vim.opt.splitbelow:get() and "below" or "above"
-    local bufnr = m.items[m:hovered()].id
-    m:close() -- make sure to call first !
-    vim.api.nvim_open_win(bufnr, true, { split = split_direction, win = 0 })
-  end, opts)
-
-  vim.keymap.set("n", Config.navigate.change_tag, function()
-    local item_id = m:hovered()
-    vim.ui.input({ prompt = "Enter custom tag: " }, function(input)
-      table.insert(Snipe.index_to_tag, { index = item_id, tag = input })
-      m:reopen()
-    end)
-  end, opts)
+  if Config.navigate.change_tag then
+    vim.keymap.set("n", Config.navigate.change_tag, function()
+      Snipe.change_tag(m, m:hovered())
+    end, opts)
+  end
 end
 
 ---create "format" function based on Config.ui options
@@ -204,11 +197,15 @@ function Snipe.default_fmt(line_format)
   end
 end
 
-function Snipe.default_select(m, i)
-  Snipe.global_menu:close()
-  m.opened_from_wid = m:open_over()
-  vim.api.nvim_set_current_win(m.opened_from_wid)
-  vim.api.nvim_set_current_buf(m.items[i].id)
+function Snipe.default_select(m, i, leader)
+  if leader then
+    pcall(Config.navigate.leader_map[vim.fn.getcharstr()], m, i)
+  else
+    Snipe.global_menu:close()
+    m.opened_from_wid = m:open_over()
+    vim.api.nvim_set_current_win(m.opened_from_wid)
+    vim.api.nvim_set_current_buf(m.items[i].id)
+  end
 end
 
 function Snipe.preselect_by_classifier(classifier)
@@ -289,6 +286,45 @@ function Snipe.ui_select(items, opts, on_choice)
     m:close()
   end, format_item)
   Snipe.ui_select_menu.config.open_win_override.title = Config.ui.open_win_override.title
+end
+
+function Snipe.close_buf(m, i)
+  local bufnr = m.items[i].id
+  -- I have to hack switch back to main window, otherwise currently background focused
+  -- window cannot be deleted when focused on a floating window
+  m.opened_from_wid = m:open_over()
+  vim.api.nvim_set_current_win(m.opened_from_wid)
+
+  local ok, snacks = pcall(require, "snacks")
+  if ok then
+    snacks.bufdelete(bufnr)
+  else
+    vim.api.nvim_buf_delete(bufnr, { force = false })
+  end
+
+  vim.api.nvim_set_current_win(m.win)
+  table.remove(m.items, i)
+  m:reopen()
+end
+
+function Snipe.open_vsplit(m, i)
+  local bufnr = m.items[i].id
+  m:close() -- make sure to call first !
+  vim.api.nvim_open_win(bufnr, true, { vertical = true, win = 0 })
+end
+
+function Snipe.open_split(m, i)
+  local split_direction = vim.opt.splitbelow:get() and "below" or "above"
+  local bufnr = m.items[i].id
+  m:close() -- make sure to call first !
+  vim.api.nvim_open_win(bufnr, true, { split = split_direction, win = 0 })
+end
+
+function Snipe.change_tag(m, i)
+  vim.ui.input({ prompt = "Enter custom tag: " }, function(input)
+    table.insert(Snipe.index_to_tag, { index = i, tag = input })
+    m:reopen()
+  end)
 end
 
 return Snipe

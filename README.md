@@ -99,13 +99,33 @@ You can pass in a table of options to the `setup` function, here are the default
     --     return " ", "SnipeText"
     --   end
     -- end },
+
+    -- Whether to remember mappings from bufnr -> tag
+    persist_tags = true,
   },
   hints = {
     -- Charaters to use for hints (NOTE: make sure they don't collide with the navigation keymaps)
     ---@type string
     dictionary = "sadflewcmpghio",
+    -- Character used to disambiguate tags when 'persist_tags' option is set
+    prefix_key = ".",
   },
   navigate = {
+    -- Specifies the "leader" key
+    -- This allows you to select a buffer but defer the action.
+    -- NOTE: this does not override your actual leader key!
+    leader = ",",
+
+    -- Leader map defines keys that follow a selection prefixed by the
+    -- leader key. For example (with tag "a"):
+    -- ,ad -> run leader_map["d"](m, i)
+    -- NOTE: the leader_map cannot specify multi character bindings.
+    leader_map = {
+      ["d"] = function (m, i) require("snipe").close_buf(m, i) end,
+      ["v"] = function (m, i) require("snipe").open_vsplit(m, i) end,
+      ["h"] = function (m, i) require("snipe").open_split(m, i) end,
+    },
+
     -- When the list is too long it is split into pages
     -- `[next|prev]_page` options allow you to navigate
     -- this list
@@ -133,14 +153,15 @@ You can pass in a table of options to the `setup` function, here are the default
     -- Open buffer in split, based on `vim.opt.splitbelow`
     open_split = "H",
 
-    -- Change tag manually
-    change_tag = "C",
+    -- Change tag manually (note only works if `persist_tags` is not enabled)
+    -- change_tag = "C",
   },
   -- The default sort used for the buffers
   -- Can be any of:
   --  "last" - sort buffers by last accessed
   --  "default" - sort buffers by its number
   --  fun(bs:snipe.Buffer[]):snipe.Buffer[] - custom sort function, should accept a list of snipe.Buffer[] as an argument and return sorted list of snipe.Buffer[]
+  ---@type "last"|"default"|fun(buffers:snipe.Buffer[]):snipe.Buffer[]
   sort = "default",
 }
 ```
