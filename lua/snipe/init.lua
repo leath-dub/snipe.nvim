@@ -271,12 +271,15 @@ function Snipe.ui_select(items, opts, on_choice)
 
   local format_item = function (item)
     local fmtd = opts.format_item(item) -- Force take only the first return value
-                                       -- This is because snipe format function
-                                       -- looks at the second return value and
-                                       -- expects it to have highlight
-                                       -- information
+                                        -- This is because snipe format function
+                                        -- looks at the second return value and
+                                        -- expects it to have highlight
+                                        -- information
     return fmtd
   end
+
+  -- Persist tags should not be used for ui select menu
+  Snipe.ui_select_menu.config.persist_tags_key = nil
 
   if opts.prompt ~= nil then
     Snipe.ui_select_menu.config.open_win_override.title = opts.prompt
