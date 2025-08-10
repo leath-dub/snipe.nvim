@@ -271,6 +271,7 @@ function Snipe.ui_select(items, opts, on_choice)
   end
 
   local format_item = function (item)
+    if not opts.format_item then return item end
     local fmtd = opts.format_item(item) -- Force take only the first return value
                                         -- This is because snipe format function
                                         -- looks at the second return value and
