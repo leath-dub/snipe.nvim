@@ -33,17 +33,12 @@ local Slice = require("snipe.slice")
 -- Table for helper stuff
 local H = {}
 
-local persist_tags_key
-if Config.ui.persist_tags then
-  persist_tags_key = function (item) return item.id end
-end
-
 -- This config will only really apply if not
 -- being called through the high level interface (which pushes global config values down)
 H.default_config = {
   dictionary = Config.hints.dictionary,
   position = Config.ui.position,
-  persist_tags_key = persist_tags_key,
+  persist_tags_key = nil,
   open_win_override = Config.ui.open_win_override,
   default_keymaps = {
     -- if enabled, the default keymaps will be set automatically

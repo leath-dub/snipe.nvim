@@ -12,6 +12,7 @@ Snipe.setup = function(config)
   Snipe.global_menu = SnipeMenu:new({
     map_tags = Snipe.default_map_tags,
     set_window_local_options = Snipe.set_window_local_options,
+    persist_tags_key = function (item) return item.id end,
   })
 
   -- Setup autocmd to prune persistent_tags
@@ -277,9 +278,6 @@ function Snipe.ui_select(items, opts, on_choice)
                                         -- information
     return fmtd
   end
-
-  -- Persist tags should not be used for ui select menu
-  Snipe.ui_select_menu.config.persist_tags_key = nil
 
   if opts.prompt ~= nil then
     Snipe.ui_select_menu.config.open_win_override.title = opts.prompt
