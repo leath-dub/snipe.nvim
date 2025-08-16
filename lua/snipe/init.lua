@@ -12,7 +12,7 @@ Snipe.setup = function(config)
   Snipe.global_menu = SnipeMenu:new({
     map_tags = Snipe.default_map_tags,
     set_window_local_options = Snipe.set_window_local_options,
-    persist_tags_key = function (item) return item.id end,
+    persist_tags_key = Config.ui.persist_tags and function (item) return item.id end or nil,
   })
 
   -- Setup autocmd to prune persistent_tags
