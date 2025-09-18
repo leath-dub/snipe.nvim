@@ -85,6 +85,7 @@ M.defaults = {
     -- You can also just use normal navigation to go to the item you want
     -- this option just sets the keybind for selecting the item under the
     -- cursor
+    ---@type string|string[]
     under_cursor = "<cr>",
 
     -- In case you changed your mind, provide a keybind that lets you
@@ -138,7 +139,7 @@ M.validate = function(config)
     ["navigate.leader_map"] = { config.navigate.leader_map, "table", true },
     ["navigate.next_page"] = { config.navigate.next_page, "string", true },
     ["navigate.prev_page"] = { config.navigate.prev_page, "string", true },
-    ["navigate.under_cursor"] = { config.navigate.under_cursor, "string", true },
+    ["navigate.under_cursor"] = { config.navigate.under_cursor, { "string", "table" }, true },
     ["navigate.cancel_snipe"] = { config.navigate.cancel_snipe, { "string", "table" }, true },
     ["navigate.close_buffer"] = { config.navigate.close_buffer, "string", true },
     ["navigate.open_vsplit"] = { config.navigate.open_vsplit, "string", true },
