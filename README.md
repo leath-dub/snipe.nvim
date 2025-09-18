@@ -135,6 +135,7 @@ You can pass in a table of options to the `setup` function, here are the default
     -- You can also just use normal navigation to go to the item you want
     -- this option just sets the keybind for selecting the item under the
     -- cursor
+    ---@type string|string[]
     under_cursor = "<cr>",
 
     -- In case you changed your mind, provide a keybind that lets you

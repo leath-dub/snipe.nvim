@@ -98,7 +98,11 @@ function Menu:default_keymaps(callbacks)
 
   set_keymap(keymaps.next_page, callbacks.nav_next)
   set_keymap(keymaps.prev_page, callbacks.nav_prev)
-  set_keymap(keymaps.under_cursor, callbacks.under_cursor)
+
+  local under_cursor_keys = type(keymaps.under_cursor) == "string" and { keymaps.under_cursor } or keymaps.under_cursor
+  for _, key in ipairs(under_cursor_keys or {}) do
+    set_keymap(key, callbacks.under_cursor)
+  end
 
   local cancel_keys = type(keymaps.cancel) == "string" and { keymaps.cancel } or keymaps.cancel
   for _, key in ipairs(cancel_keys or {}) do
